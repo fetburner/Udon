@@ -1,0 +1,120 @@
+
+
+
+%%
+(* Declarations for ML-Yacc *)
+
+%name Udon
+%pos unit
+%eop SEMICOLON
+%start EXP
+
+(* Terminal symbols *)
+%term VID of string (* value identifier *)
+    | SCON of Const.t (* special constant *)
+    | ELSE (* else *)
+    | END (* end *)
+    | FN (* fn *)
+    | IF (* if *)
+    | IN (* in *)
+    | LET (* let *)
+    | OP (* op *)
+    | REC (* rec *)
+    | THEN (* then *)
+    | VAL (* val *)
+    | EQUAL (* = *)
+    | COMMA (* , *)
+    | PLUS (* + *)
+    | MINUS (* - *)
+    | AST (* * *)
+    | LPAREN (* ( *)
+    | RPAREN (* ) *)
+    | LE (* <= *)
+    | FATARROW (* => *)
+    | SEMICOLON (* ; *)
+
+(* Nonterminal symbols *)
+%nonterm ATEXP of Syntax.exp
+       | ATEXPSEQ_AUX of Syntax.exp list
+       | ATEXPSEQ of Syntax.exp list
+       | VIDSEQ_AUX of Id.t list
+       | VIDSEQ of Id.t list
+       | PRIM of Prim.t
+       | APPEXP of Syntax.exp
+       | EXP of Syntax.exp
+       | EXPSEQ_AUX of Syntax.exp list
+       | EXPSEQ of Syntax.exp list
+
+%%
+
+(* Production rules *)
+ATEXP : SCON
+          (Syntax.CONST SCON)
+      | VID
+          (Syntax.VAR VID)
+      | LET VAL VID EQUAL EXP IN EXP END
+          (Syntax.LET_VAL (VID, EXP1, EXP2))
+      | LET VAL REC VID EQUAL FN VIDSEQ FATARROW EXP IN EXP END
+          (Syntax.LET_VALREC (VID, VIDSEQ, EXP1, EXP2))
+      | LPAREN EXP RPAREN
+          (EXP)
+
+ATEXPSEQ_AUX : ATEXP
+                 ([ATEXP])
+             | ATEXP COMMA ATEXPSEQ_AUX
+                 (ATEXP :: ATEXPSEQ_AUX)
+
+ATEXPSEQ : LPAREN RPAREN
+             ([])
+         | ATEXP
+             ([ATEXP])
+         | LPAREN ATEXPSEQ_AUX RPAREN
+             (ATEXPSEQ_AUX)
+
+VIDSEQ_AUX : VID
+               ([VID])
+           | VID COMMA VIDSEQ
+               (VID :: VIDSEQ)
+
+VIDSEQ : LPAREN RPAREN
+           ([])
+       | VID
+           ([VID])
+       | LPAREN VIDSEQ_AUX RPAREN
+           (VIDSEQ_AUX)
+
+PRIM : PLUS
+         (Prim.PLUS)
+     | MINUS
+         (Prim.MINUS)
+     | AST
+         (Prim.TIMES)
+     | LE
+         (Prim.LE)
+
+APPEXP : ATEXP
+           (ATEXP)
+       | APPEXP ATEXPSEQ
+           (Syntax.APP (APPEXP, ATEXPSEQ))
+
+EXP : APPEXP
+        (APPEXP)
+    | OP PRIM EXPSEQ
+        (Syntax.PRIM (PRIM, EXPSEQ))
+    | FN VIDSEQ FATARROW EXP
+        (Syntax.ABS (VIDSEQ, EXP))
+    | IF EXP THEN EXP ELSE EXP
+        (Syntax.IF (EXP1, EXP2, EXP3))
+
+EXPSEQ_AUX : EXP
+               ([EXP])
+           | EXP COMMA EXPSEQ_AUX
+               (EXP :: EXPSEQ_AUX)
+
+EXPSEQ : LPAREN RPAREN
+           ([])
+       | EXP
+           ([EXP])
+       | LPAREN EXPSEQ_AUX RPAREN
+           (EXPSEQ_AUX)
+
