@@ -19,16 +19,6 @@ structure Syntax = struct
     (* op (+) (M_1, ... , M_n) *)
     | PRIM of Prim.t * exp list
 
-  (* auxiliary function for pretty-printing sequence *)
-  (* e.g. seqToString Int.toString [1, 1, 4, 5, 1, 4] *)
-  fun seqToString toString [] = "()"
-    | seqToString toString [x] = toString x
-    | seqToString toString (x :: xs) =
-        "("
-        ^ List.foldl (fn (x, s) =>
-            s ^ ", " ^ toString x) (toString x) xs
-        ^ ")"
-
   (* pretty-printer *)
   (* as you can see, this implementation is conservative *)
   fun expToString (CONST c) = Const.toString c
@@ -43,7 +33,7 @@ structure Syntax = struct
         ^ ")"
     | expToString (ABS (xs, m)) =
         "(fn "
-        ^ seqToString Id.toString xs
+        ^ Id.seqToString xs
         ^ " => " 
         ^ expToString m
         ^ ")"
@@ -51,7 +41,7 @@ structure Syntax = struct
         "("
         ^ expToString m
         ^ " "
-        ^ seqToString expToString ns
+        ^ expSeqToString ns
         ^ ")"
     | expToString (LET_VAL (x, m, n)) =
         "let val "
@@ -65,7 +55,7 @@ structure Syntax = struct
         "let val rec "
         ^ f
         ^ " = fn "
-        ^ seqToString Id.toString xs
+        ^ Id.seqToString xs
         ^ " => "
         ^ expToString m
         ^ " in "
@@ -75,7 +65,8 @@ structure Syntax = struct
         "(op"
         ^ Prim.toString p
         ^ " "
-        ^ seqToString expToString ms
+        ^ expSeqToString ms
         ^ ")"
+  and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
 
 end

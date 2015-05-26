@@ -1,7 +1,9 @@
 Group is
   $/basis.cm
   $/ml-yacc-lib.cm
+  pP.sml
   id.sml
+  id.sig
   const.sml
   prim.sml
   syntax.sml
