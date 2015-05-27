@@ -97,11 +97,27 @@ structure Typing : TYPING = struct
           end
 
     fun derefExp (E (m, t)) = (derefType t; derefExpBody m)
-    and derefExpBody (ABS (xs, _)) = List.app (derefType o #2) xs
-      | derefExpBody (LET_VAL ((_, t), _, _)) = derefType t
-      | derefExpBody (LET_VALREC ((_, t1), xs, _, _)) =
+    and derefExpBody (IF (m, n1, n2)) =
+          (derefExp m;
+           derefExp n1;
+           derefExp n2)
+      | derefExpBody (ABS (xs, m)) =
+          (List.app (derefType o #2) xs;
+           derefExp m)
+      | derefExpBody (APP (m, ns)) =
+          (derefExp m;
+           List.app derefExp ns)
+      | derefExpBody (LET_VAL ((_, t), m, n)) =
+          (derefType t;
+           derefExp m;
+           derefExp n)
+      | derefExpBody (LET_VALREC ((_, t1), xs, m, n)) =
           (derefType t1;
-           List.app (derefType o #2) xs)
+           List.app (derefType o #2) xs;
+           derefExp m;
+           derefExp n)
+      | derefExpBody (PRIM (_, ms)) =
+          List.app derefExp ms
       | derefExpBody _ = ()
 
     fun f env m =
