@@ -4,10 +4,21 @@ structure Typing : TYPING = struct
   in
     exception Unify of t * t
 
+  fun occur r1 (FUN (t21s, t22)) =
+        List.exists (occur r1) t21s orelse occur r1 t22
+    | occur r1 (VAR (r2 as (ref NONE))) = r1 = r2
+    | occur r1 (VAR (r2 as (ref (SOME t2)))) =
+        r1 = r2 orelse occur r1 t2
+    | occur _ _ = false
+
     fun unify (INT, INT) = ()
       | unify (BOOL, BOOL) = ()
-      | unify (VAR (t1 as (ref NONE)), t2) = t1 := SOME t2
-      | unify (t1, VAR (t2 as (ref NONE))) = t2 := SOME t1
+      | unify (t1 as (VAR (r1 as (ref NONE))), t2) =
+          if occur r1 t2 then raise (Unify (t1, t2))
+          else r1 := SOME t2
+      | unify (t1, t2 as (VAR (r2 as (ref NONE)))) =
+          if occur r2 t1 then raise (Unify (t1, t2))
+          else r2 := SOME t1
       | unify (VAR (ref (SOME t1)), VAR (ref (SOME t2))) = unify (t1, t2)
       | unify (FUN (t11s, t12), FUN (t21s, t22)) =
           (ListPair.appEq unify (t11s, t21s);
