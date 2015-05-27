@@ -42,8 +42,6 @@
        | PRIM of Prim.t
        | APPEXP of Syntax.exp
        | EXP of Syntax.exp
-       | EXPSEQ_AUX of Syntax.exp list
-       | EXPSEQ of Syntax.exp list
 
 %%
 
@@ -96,25 +94,12 @@ APPEXP : ATEXP
            (ATEXP)
        | APPEXP ATEXPSEQ
            (Syntax.APP (APPEXP, ATEXPSEQ))
+       | OP PRIM ATEXPSEQ
+           (Syntax.PRIM (PRIM, ATEXPSEQ))
 
 EXP : APPEXP
         (APPEXP)
-    | OP PRIM EXPSEQ
-        (Syntax.PRIM (PRIM, EXPSEQ))
     | FN VIDSEQ FATARROW EXP
         (Syntax.ABS (VIDSEQ, EXP))
     | IF EXP THEN EXP ELSE EXP
         (Syntax.IF (EXP1, EXP2, EXP3))
-
-EXPSEQ_AUX : EXP
-               ([EXP])
-           | EXP COMMA EXPSEQ_AUX
-               (EXP :: EXPSEQ_AUX)
-
-EXPSEQ : LPAREN RPAREN
-           ([])
-       | EXP
-           ([EXP])
-       | LPAREN EXPSEQ_AUX RPAREN
-           (EXPSEQ_AUX)
-
