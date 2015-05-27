@@ -2,11 +2,17 @@ Group is
   $/basis.cm
   $/ml-yacc-lib.cm
   pP.sml
+  type.sml
   id.sml
   id.sig
+  env.sml
+  env.sig
   const.sml
   prim.sml
   syntax.sml
+  typedSyntax.sml
+  typing.sml
+  typing.sig
   udon.grm
   udon.lex
   udon.sml

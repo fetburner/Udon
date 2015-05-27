@@ -8,7 +8,7 @@ structure UdonParser = Join(structure LrParser = LrParser
                            structure Lex = UdonLex)
 
 fun exec exp stat =
-  (print (Syntax.expToString exp);
+  ((print o TypedSyntax.expToString o Typing.f Env.empty) exp;
    print "\n";
    stat)
 
