@@ -73,8 +73,8 @@ ATEXPSEQ : LPAREN RPAREN
 
 VIDSEQ_AUX : VID
                ([VID])
-           | VID COMMA VIDSEQ
-               (VID :: VIDSEQ)
+           | VID COMMA VIDSEQ_AUX
+               (VID :: VIDSEQ_AUX)
 
 VIDSEQ : LPAREN RPAREN
            ([])
