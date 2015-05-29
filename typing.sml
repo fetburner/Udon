@@ -46,8 +46,8 @@ structure Typing : TYPING = struct
            | SOME t => E (VAR x, t))
       | g env (Syntax.IF (m, n1, n2)) =
           let
-            val (m' as (E (_, t1))) = g env m;
-            val (n1' as (E (_, t2))) = g env n1;
+            val (m' as (E (_, t1))) = g env m
+            val (n1' as (E (_, t2))) = g env n1
             val (n2' as (E (_, t3))) = g env n2
           in
             unify (t1, Type.BOOL);
@@ -56,15 +56,15 @@ structure Typing : TYPING = struct
           end
       | g env (Syntax.ABS (xs, m)) =
           let
-            val xs' = List.map (fn x => (x, Type.genvar ())) xs;
+            val xs' = List.map (fn x => (x, Type.genvar ())) xs
             val (m' as (E (_, t))) = g (Env.insertList (env, xs')) m
           in
             E (ABS (xs', m'), Type.FUN (map #2 xs', t))
           end
       | g env (Syntax.APP (m, ns)) =
           let 
-            val (m' as (E (_, t1))) = g env m;
-            val ns' = map (g env) ns;
+            val (m' as (E (_, t1))) = g env m
+            val ns' = map (g env) ns
             val t12 = Type.genvar ()
           in
             unify (t1, Type.FUN (map expTypeOf ns', t12));
@@ -72,25 +72,25 @@ structure Typing : TYPING = struct
           end
       | g env (Syntax.LET_VAL (x, m, n)) =
           let
-            val (m' as (E (_, t1))) = g env m;
+            val (m' as (E (_, t1))) = g env m
             val (n' as (E (_, t2))) = g (Env.insert (env, x, t1)) n
           in
             E (LET_VAL ((x, t1), m', n'), t2)
           end
       | g env (Syntax.LET_VALREC (f, xs, m, n)) =
           let
-            val t1 = Type.genvar ();
-            val xs' = List.map (fn x => (x, Type.genvar ())) xs;
+            val t1 = Type.genvar ()
+            val xs' = List.map (fn x => (x, Type.genvar ())) xs
             val (m' as (E (_, t1'))) =
               g (Env.insertList (env, (f, t1) :: xs')) m
             val (n' as (E (_, t2))) = g (Env.insert (env, f, t1')) n
           in
-            unify (t1, t1');
-            E (LET_VALREC ((f, t1'), xs', m', n'), t2)
+            unify (t1, Type.FUN (map #2 xs', t1'));
+            E (LET_VALREC ((f, t1), xs', m', n'), t2)
           end
       | g env (Syntax.PRIM (p, ms)) =
           let
-            val t = Type.genvar ();
+            val t = Type.genvar ()
             val ms' = map (g env) ms
           in
             unify (Prim.typeOf p, Type.FUN (map expTypeOf ms', t));
