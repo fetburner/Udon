@@ -13,16 +13,17 @@ structure Typing : TYPING = struct
 
     fun unify (INT, INT) = ()
       | unify (BOOL, BOOL) = ()
+      | unify (FUN (t11s, t12), FUN (t21s, t22)) =
+          (ListPair.appEq unify (t11s, t21s);
+           unify (t12, t22))
       | unify (t1 as (VAR (r1 as (ref NONE))), t2) =
           if occur r1 t2 then raise (Unify (t1, t2))
           else r1 := SOME t2
       | unify (t1, t2 as (VAR (r2 as (ref NONE)))) =
           if occur r2 t1 then raise (Unify (t1, t2))
           else r2 := SOME t1
-      | unify (VAR (ref (SOME t1)), VAR (ref (SOME t2))) = unify (t1, t2)
-      | unify (FUN (t11s, t12), FUN (t21s, t22)) =
-          (ListPair.appEq unify (t11s, t21s);
-           unify (t12, t22))
+      | unify (VAR (ref (SOME t1)), t2) = unify (t1, t2)
+      | unify (t1, VAR (ref (SOME t2))) = unify (t1, t2)
       | unify (t1, t2) = raise (Unify (t1, t2))
 
     fun derefType (VAR (t as (ref NONE))) = t := SOME INT
