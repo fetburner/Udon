@@ -8,7 +8,12 @@ structure UdonParser = Join(structure LrParser = LrParser
                            structure Lex = UdonLex)
 
 fun exec exp stat =
-  ((print o TypedSyntax.expToString o Typing.f Env.empty) exp;
+  ((print
+    o TypedSyntax.expToString
+    o Typing.f Env.empty) exp
+    handle Typing.Unify (t1, t2) =>
+      print ("unify " ^ Type.toString t1 ^ " " ^ Type.toString t2);
+
    print "\n";
    stat)
 
