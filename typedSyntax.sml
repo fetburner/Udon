@@ -1,8 +1,13 @@
 structure TypedSyntax = struct
+  (* typed value identifier *)
   type id = Id.t * Type.t
 
   fun idToString (x, t) = Id.toString x ^ " : " ^ Type.toString t
   val idSeqToString = PP.seqToString (idToString, "()", ", ", "(", ")")
+  (* return type of typed value identifier *)
+  val idTypeOf : id -> Type.t = #2
+  (* return types of typed value identifiers *)
+  val idSeqTypeOf = map idTypeOf
 
   (* e : T *)
   datatype exp = E of exp_body * Type.t
@@ -73,5 +78,8 @@ structure TypedSyntax = struct
         ^ ")"
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
 
+  (* return type of typed expression *)
   fun expTypeOf (E (_, t)) = t
+  (* return types of typed expressions *)
+  val expSeqTypeOf = map expTypeOf
 end

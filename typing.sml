@@ -2,15 +2,18 @@ structure Typing : TYPING = struct
   local
     open Type
   in
+    (* exception that arises when type checker fail to unify types *)
     exception Unify of t * t
 
-  fun occur r1 (FUN (t21s, t22)) =
-        List.exists (occur r1) t21s orelse occur r1 t22
-    | occur r1 (VAR (r2 as (ref NONE))) = r1 = r2
-    | occur r1 (VAR (r2 as (ref (SOME t2)))) =
-        r1 = r2 orelse occur r1 t2
-    | occur _ _ = false
+    (* occur check *)
+    fun occur r1 (FUN (t21s, t22)) =
+          List.exists (occur r1) t21s orelse occur r1 t22
+      | occur r1 (VAR (r2 as (ref NONE))) = r1 = r2
+      | occur r1 (VAR (r2 as (ref (SOME t2)))) =
+          r1 = r2 orelse occur r1 t2
+      | occur _ _ = false
 
+    (* unifier *)
     fun unify (INT, INT) = ()
       | unify (BOOL, BOOL) = ()
       | unify (FUN (t11s, t12), FUN (t21s, t22)) =
@@ -26,6 +29,7 @@ structure Typing : TYPING = struct
       | unify (t1, VAR (ref (SOME t2))) = unify (t1, t2)
       | unify (t1, t2) = raise (Unify (t1, t2))
 
+    (* replace type variable with appropriate type (int) in type *)
     fun derefType (VAR (t as (ref NONE))) = t := SOME INT
       | derefType (VAR (ref (SOME t))) = derefType t
       | derefType (FUN (t1s, t2)) =
@@ -34,11 +38,13 @@ structure Typing : TYPING = struct
       | derefType _ = ()
   end
 
+  (* exception that arises when unbound variable occur *)
   exception UnboundVar of Id.t
 
   local
     open TypedSyntax
   in
+    (* perform type inference *)
     fun g env (Syntax.CONST c) =
           E (CONST c, Const.typeOf c)
       | g env (Syntax.VAR x) =
@@ -47,58 +53,59 @@ structure Typing : TYPING = struct
            | SOME t => E (VAR x, t))
       | g env (Syntax.IF (m, n1, n2)) =
           let
-            val (m' as (E (_, t1))) = g env m
-            val (n1' as (E (_, t2))) = g env n1
-            val (n2' as (E (_, t3))) = g env n2
+            val m' = g env m
+            val n1' = g env n1
+            val n2' = g env n2
           in
-            unify (t1, Type.BOOL);
-            unify (t2, t3);
-            E (IF (m', n1', n2'), t2)
+            unify (expTypeOf m', Type.BOOL);
+            unify (expTypeOf n1', expTypeOf n2');
+            E (IF (m', n1', n2'), expTypeOf n1')
           end
       | g env (Syntax.ABS (xs, m)) =
           let
             val xs' = List.map (fn x => (x, Type.genvar ())) xs
-            val (m' as (E (_, t))) = g (Env.insertList (env, xs')) m
+            val m' = g (Env.insertList (env, xs')) m
           in
-            E (ABS (xs', m'), Type.FUN (map #2 xs', t))
+            E (ABS (xs', m'), Type.FUN (idSeqTypeOf xs', expTypeOf m'))
           end
       | g env (Syntax.APP (m, ns)) =
           let 
-            val (m' as (E (_, t1))) = g env m
+            val m' = g env m
             val ns' = map (g env) ns
             val t12 = Type.genvar ()
           in
-            unify (t1, Type.FUN (map expTypeOf ns', t12));
+            unify (expTypeOf m', Type.FUN (expSeqTypeOf ns', t12));
             E (APP (m', ns'), t12)
           end
       | g env (Syntax.LET_VAL (x, m, n)) =
           let
-            val (m' as (E (_, t1))) = g env m
-            val (n' as (E (_, t2))) = g (Env.insert (env, x, t1)) n
+            val m' = g env m
+            val n' = g (Env.insert (env, x, expTypeOf m')) n
           in
-            E (LET_VAL ((x, t1), m', n'), t2)
+            E (LET_VAL ((x, expTypeOf m'), m', n'), expTypeOf n')
           end
       | g env (Syntax.LET_VALREC (f, xs, m, n)) =
           let
             val t1 = Type.genvar ()
             val xs' = List.map (fn x => (x, Type.genvar ())) xs
-            val (m' as (E (_, t1'))) =
-              g (Env.insertList (env, (f, t1) :: xs')) m
-            val (n' as (E (_, t2))) = g (Env.insert (env, f, t1')) n
+            val m' = g (Env.insertList (env, (f, t1) :: xs')) m
+            val n' = g (Env.insert (env, f, expTypeOf m')) n
           in
-            unify (t1, Type.FUN (map #2 xs', t1'));
-            E (LET_VALREC ((f, t1), xs', m', n'), t2)
+            unify (t1, Type.FUN (idSeqTypeOf xs', expTypeOf m'));
+            E (LET_VALREC ((f, t1), xs', m', n'), expTypeOf n')
           end
       | g env (Syntax.PRIM (p, ms)) =
           let
             val t = Type.genvar ()
             val ms' = map (g env) ms
           in
-            unify (Prim.typeOf p, Type.FUN (map expTypeOf ms', t));
+            unify (Prim.typeOf p, Type.FUN (expSeqTypeOf ms', t));
             E (PRIM (p, ms'), t)
           end
 
+    (* replace type variable with appropriate type in typed expression *)
     fun derefExp (E (m, t)) = (derefType t; derefExpBody m)
+    (* replace type variable with appropriate type in body of typed expression *)
     and derefExpBody (IF (m, n1, n2)) =
           (derefExp m;
            derefExp n1;
@@ -122,6 +129,7 @@ structure Typing : TYPING = struct
           List.app derefExp ms
       | derefExpBody _ = ()
 
+    (* typing expression and remove type variable *)
     fun f env m =
       let val m' = g env m in
         derefExp m';
