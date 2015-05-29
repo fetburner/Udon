@@ -18,6 +18,8 @@ fun exec exp stat =
            ^ Type.toString t1
            ^ " and "
            ^ Type.toString t2)
+   | Typing.UnboundVar x =>
+       print ("Error : unbound variable " ^ Id.toString x)
    | UnequalLengths =>
        print "Error : inconsistent arity";
    print "\n";
