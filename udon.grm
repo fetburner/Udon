@@ -41,6 +41,8 @@
        | VIDSEQ of Id.t list
        | PRIM of Prim.t
        | APPEXP of Syntax.exp
+       | APPEXPSEQ_AUX of Syntax.exp list
+       | APPEXPSEQ of Syntax.exp list
        | EXP of Syntax.exp
 
 %%
@@ -90,12 +92,22 @@ PRIM : PLUS
      | LE
          (Prim.LE)
 
+APPEXPSEQ_AUX : APPEXP
+		  ([APPEXP])
+	      | APPEXP COMMA APPEXPSEQ_AUX
+		  (APPEXP :: APPEXPSEQ_AUX)
+
+APPEXPSEQ : LPAREN RPAREN
+	      ([])
+	  | LPAREN APPEXPSEQ_AUX RPAREN
+	      (APPEXPSEQ_AUX)
+
 APPEXP : ATEXP
            (ATEXP)
        | APPEXP ATEXPSEQ
            (Syntax.APP (APPEXP, ATEXPSEQ))
-       | OP PRIM ATEXPSEQ
-           (Syntax.PRIM (PRIM, ATEXPSEQ))
+       | OP PRIM APPEXPSEQ
+           (Syntax.PRIM (PRIM, APPEXPSEQ))
 
 EXP : APPEXP
         (APPEXP)
