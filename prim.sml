@@ -15,5 +15,5 @@ structure Prim = struct
   fun typeOf (PLUS | MINUS | TIMES) =
         Type.FUN ([Type.INT, Type.INT], Type.INT)
     | typeOf LE =
-        Type.FUN ([Type.INT, Type.INT], Type.INT)
+        Type.FUN ([Type.INT, Type.INT], Type.BOOL)
 end
