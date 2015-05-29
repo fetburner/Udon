@@ -27,6 +27,7 @@ structure Typing : TYPING = struct
       | unify (t1, t2) = raise (Unify (t1, t2))
 
     fun derefType (VAR (t as (ref NONE))) = t := SOME INT
+      | derefType (VAR (ref (SOME t))) = derefType t
       | derefType (FUN (t1s, t2)) =
           (List.app derefType t1s;
            derefType t2)

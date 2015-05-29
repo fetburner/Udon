@@ -6,6 +6,7 @@ structure Type = struct
     | FUN of t list * t
 
   fun toString (VAR (ref (SOME t))) = toString t
+    | toString (VAR (ref NONE)) = "'a"
     | toString INT = "int"
     | toString BOOL = "bool"
     | toString (FUN (ts, t)) = "(" ^ seqToString ts ^ " -> " ^ toString t ^ ")"
