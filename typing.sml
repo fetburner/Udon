@@ -39,7 +39,7 @@ structure Typing : TYPING = struct
   end
 
   (* exception that arises when unbound variable occur *)
-  exception UnboundVar of Id.t
+  exception UnboundVar of string
 
   local
     open TypedSyntax
@@ -48,9 +48,9 @@ structure Typing : TYPING = struct
     fun g env (Syntax.CONST c) =
           E (CONST c, Const.typeOf c)
       | g env (Syntax.VAR x) =
-          (case Env.find (env, x) of
+          (case Env.findName (env, x) of
              NONE => raise (UnboundVar x)
-           | SOME t => E (VAR x, t))
+           | SOME (id, t) => E (VAR id, t))
       | g env (Syntax.IF (m, n1, n2)) =
           let
             val m' = g env m
@@ -63,13 +63,13 @@ structure Typing : TYPING = struct
           end
       | g env (Syntax.ABS (xs, m)) =
           let
-            val xs' = List.map (fn x => (x, Type.genvar ())) xs
+            val xs' = List.map (fn x => (Id.gensym x, Type.genvar ())) xs
             val m' = g (Env.insertList (env, xs')) m
           in
             E (ABS (xs', m'), Type.FUN (idSeqTypeOf xs', expTypeOf m'))
           end
       | g env (Syntax.APP (m, ns)) =
-          let 
+          let
             val m' = g env m
             val ns' = map (g env) ns
             val t12 = Type.genvar ()
@@ -80,19 +80,21 @@ structure Typing : TYPING = struct
       | g env (Syntax.LET_VAL (x, m, n)) =
           let
             val m' = g env m
-            val n' = g (Env.insert (env, x, expTypeOf m')) n
+            val id = Id.gensym x
+            val n' = g (Env.insert (env, id, expTypeOf m')) n
           in
-            E (LET_VAL ((x, expTypeOf m'), m', n'), expTypeOf n')
+            E (LET_VAL ((id, expTypeOf m'), m', n'), expTypeOf n')
           end
       | g env (Syntax.LET_VALREC (f, xs, m, n)) =
           let
             val t1 = Type.genvar ()
-            val xs' = List.map (fn x => (x, Type.genvar ())) xs
-            val m' = g (Env.insertList (env, (f, t1) :: xs')) m
-            val n' = g (Env.insert (env, f, expTypeOf m')) n
+            val xs' = List.map (fn x => (Id.gensym x, Type.genvar ())) xs
+            val id = Id.gensym f
+            val m' = g (Env.insertList (env, (id, t1) :: xs')) m
+            val n' = g (Env.insert (env, id, expTypeOf m')) n
           in
             unify (t1, Type.FUN (idSeqTypeOf xs', expTypeOf m'));
-            E (LET_VALREC ((f, t1), xs', m', n'), expTypeOf n')
+            E (LET_VALREC ((id, t1), xs', m', n'), expTypeOf n')
           end
       | g env (Syntax.PRIM (p, ms)) =
           let

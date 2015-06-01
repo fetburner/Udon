@@ -1,17 +1,19 @@
 structure Id : ID = struct
   (* value identifier *)
-  type t = string
+  type t = string * int
 
-  fun toString x = x
-  fun fromString s = SOME s
+  fun toString (s, id) = s ^ "_" ^ Int.toString id
+  (* fun fromString s = SOME s *)
 
-  val seqToString = PP.seqToString (toString, "()", ", ", "(", ")") 
+  val seqToString = PP.seqToString (toString, "()", ", ", "(", ")")
 
   local
     val seed = ref 0
   in
-    fun gensym () =
+    fun genId () =
       (seed := !seed + 1;
-       Int.toString (!seed))
+       !seed)
   end
+
+  fun gensym s = (s, genId ())
 end
