@@ -9,5 +9,5 @@ structure Env : ENV = struct
   fun find (env, x) =
     Option.map #2 (List.find (fn (y, _) => x = y) env)
   fun findName (env: Type.t t, x: string) =
-    (List.find (fn ((y, _), _) => x = y) env)
+    (List.find (fn ({s, id}, _) => x = s) env)
 end

@@ -1,8 +1,8 @@
 structure Id : ID = struct
   (* value identifier *)
-  type t = string * int
+  type t = {s: string, id: int}
 
-  fun toString (s, id) = s ^ "_" ^ Int.toString id
+  fun toString {s, id} = s ^ "_" ^ Int.toString id
   (* fun fromString s = SOME s *)
 
   val seqToString = PP.seqToString (toString, "()", ", ", "(", ")")
@@ -15,5 +15,5 @@ structure Id : ID = struct
        !seed)
   end
 
-  fun gensym s = (s, genId ())
+  fun gensym s = {s = s, id = genId ()}
 end
