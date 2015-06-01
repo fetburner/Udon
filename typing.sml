@@ -89,7 +89,7 @@ structure Typing : TYPING = struct
             val t1 = Type.genvar ()
             val xs' = List.map (fn x => (x, Type.genvar ())) xs
             val m' = g (Env.insertList (env, (f, t1) :: xs')) m
-            val n' = g (Env.insert (env, f, expTypeOf m')) n
+            val n' = g (Env.insert (env, f, t1)) n
           in
             unify (t1, Type.FUN (idSeqTypeOf xs', expTypeOf m'));
             E (LET_VALREC ((f, t1), xs', m', n'), expTypeOf n')

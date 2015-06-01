@@ -29,7 +29,8 @@ structure TypedSyntax = struct
     (* op (+) (M_1, ... , M_n) *)
     | PRIM of Prim.t * exp list
 
-  fun expToString (E (e, t)) = expBodyToString e ^ " : " ^ Type.toString t
+  fun expToString (E (e, t)) =
+    "(" ^ expBodyToString e ^ " : " ^ Type.toString t ^ ")"
   and expBodyToString (CONST c) = Const.toString c
     | expBodyToString (VAR x) = Id.toString x
     | expBodyToString (IF (m, n1, n2)) =
