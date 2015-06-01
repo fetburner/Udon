@@ -37,8 +37,8 @@
 %nonterm ATEXP of Syntax.exp
        | ATEXPSEQ_AUX of Syntax.exp list
        | ATEXPSEQ of Syntax.exp list
-       | VIDSEQ_AUX of Id.t list
-       | VIDSEQ of Id.t list
+       | VIDSEQ_AUX of string list
+       | VIDSEQ of string list
        | PRIM of Prim.t
        | APPEXP of Syntax.exp
        | APPEXPSEQ_AUX of Syntax.exp list
