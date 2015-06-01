@@ -19,14 +19,17 @@ structure Typing : TYPING = struct
       | unify (FUN (t11s, t12), FUN (t21s, t22)) =
           (ListPair.appEq unify (t11s, t21s);
            unify (t12, t22))
+      | unify (VAR (ref (SOME t1)), t2) = unify (t1, t2)
+      | unify (t1, VAR (ref (SOME t2))) = unify (t1, t2)
+      | unify (VAR (r1 as (ref NONE)), t2 as (VAR (r2 as (ref NONE)))) =
+          if r1 = r2 then ()
+          else r1 := SOME t2
       | unify (t1 as (VAR (r1 as (ref NONE))), t2) =
           if occur r1 t2 then raise (Unify (t1, t2))
           else r1 := SOME t2
       | unify (t1, t2 as (VAR (r2 as (ref NONE)))) =
           if occur r2 t1 then raise (Unify (t1, t2))
           else r2 := SOME t1
-      | unify (VAR (ref (SOME t1)), t2) = unify (t1, t2)
-      | unify (t1, VAR (ref (SOME t2))) = unify (t1, t2)
       | unify (t1, t2) = raise (Unify (t1, t2))
 
     (* replace type variable with appropriate type (int) in type *)
