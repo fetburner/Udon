@@ -10,8 +10,9 @@
 %start EXP
 
 (* Terminal symbols *)
-%term VID of string (* value identifier *)
-    | SCON of Const.t (* special constant *)
+%term IDENT of string (* value identifier *)
+    | BOOL of bool
+    | DIGIT of int
     | ELSE (* else *)
     | END (* end *)
     | FN (* fn *)
@@ -24,22 +25,19 @@
     | VAL (* val *)
     | EQUAL (* = *)
     | COMMA (* , *)
-    | PLUS (* + *)
-    | MINUS (* - *)
-    | AST (* * *)
     | LPAREN (* ( *)
     | RPAREN (* ) *)
-    | LE (* <= *)
     | FATARROW (* => *)
     | SEMICOLON (* ; *)
 
 (* Nonterminal symbols *)
-%nonterm ATEXP of Syntax.exp
+%nonterm VID of string
+       | SCON of Const.t
+       | ATEXP of Syntax.exp
        | ATEXPSEQ_AUX of Syntax.exp list
        | ATEXPSEQ of Syntax.exp list
        | VIDSEQ_AUX of string list
        | VIDSEQ of string list
-       | PRIM of Prim.t
        | APPEXP of Syntax.exp
        | APPEXPSEQ_AUX of Syntax.exp list
        | APPEXPSEQ of Syntax.exp list
@@ -48,9 +46,21 @@
 %%
 
 (* Production rules *)
+VID : IDENT
+          (IDENT)
+    | EQUAL
+          ("=")
+
+SCON : BOOL
+          (Const.BOOL BOOL)
+     | DIGIT
+          (Const.INT DIGIT)
+
 ATEXP : SCON
           (Syntax.CONST SCON)
       | VID
+          (Syntax.VAR VID)
+      | OP VID
           (Syntax.VAR VID)
       | LET VAL VID EQUAL EXP IN EXP END
           (Syntax.LET_VAL (VID, EXP1, EXP2))
@@ -83,15 +93,6 @@ VIDSEQ : LPAREN RPAREN
        | LPAREN VIDSEQ_AUX RPAREN
            (VIDSEQ_AUX)
 
-PRIM : PLUS
-         (Prim.PLUS)
-     | MINUS
-         (Prim.MINUS)
-     | AST
-         (Prim.TIMES)
-     | LE
-         (Prim.LE)
-
 APPEXPSEQ_AUX : APPEXP
 		  ([APPEXP])
 	      | APPEXP COMMA APPEXPSEQ_AUX
@@ -106,8 +107,6 @@ APPEXP : ATEXP
            (ATEXP)
        | APPEXP ATEXPSEQ
            (Syntax.APP (APPEXP, ATEXPSEQ))
-       | OP PRIM APPEXPSEQ
-           (Syntax.PRIM (PRIM, APPEXPSEQ))
 
 EXP : APPEXP
         (APPEXP)

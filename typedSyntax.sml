@@ -26,8 +26,6 @@ structure TypedSyntax = struct
     | LET_VAL of id * exp * exp
     (* let val rec f : T_1 = fn (x_1 : T_21, ... , x_2n : T_n) => M in N *)
     | LET_VALREC of id * id list * exp * exp
-    (* op (+) (M_1, ... , M_n) *)
-    | PRIM of Prim.t * exp list
 
   fun expToString (E (e, t)) =
     "(" ^ expBodyToString e ^ " : " ^ Type.toString t ^ ")"
@@ -71,12 +69,6 @@ structure TypedSyntax = struct
         ^ " in "
         ^ expToString n
         ^ " end"
-    | expBodyToString (PRIM (p, ms)) =
-        "(op"
-        ^ Prim.toString p
-        ^ " "
-        ^ expSeqToString ms
-        ^ ")"
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
 
   (* return type of typed expression *)

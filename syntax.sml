@@ -16,8 +16,6 @@ structure Syntax = struct
     | LET_VAL of string * exp * exp
     (* let val rec f = fn (x_1, ... , x_n) => M in N *)
     | LET_VALREC of string * string list * exp * exp
-    (* op (+) (M_1, ... , M_n) *)
-    | PRIM of Prim.t * exp list
 
   (* pretty-printer *)
   (* as you can see, this implementation is conservative *)
@@ -64,12 +62,6 @@ structure Syntax = struct
       ^ " in "
       ^ expToString n
       ^ " end"
-    | expToString (PRIM (p, ms)) =
-      "(op"
-      ^ Prim.toString p
-      ^ " "
-      ^ expSeqToString ms
-      ^ ")"
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
   end
 end

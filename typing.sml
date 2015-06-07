@@ -99,14 +99,6 @@ structure Typing : TYPING = struct
             unify (t1, Type.FUN (idSeqTypeOf xs', expTypeOf m'));
             E (LET_VALREC ((id, t1), xs', m', n'), expTypeOf n')
           end
-      | g env (Syntax.PRIM (p, ms)) =
-          let
-            val t = Type.genvar ()
-            val ms' = map (g env) ms
-          in
-            unify (Prim.typeOf p, Type.FUN (expSeqTypeOf ms', t));
-            E (PRIM (p, ms'), t)
-          end
 
     (* replace type variable with appropriate type in typed expression *)
     fun derefExp (E (m, t)) = (derefType t; derefExpBody m)
@@ -130,8 +122,6 @@ structure Typing : TYPING = struct
            List.app (derefType o #2) xs;
            derefExp m;
            derefExp n)
-      | derefExpBody (PRIM (_, ms)) =
-          List.app derefExp ms
       | derefExpBody _ = ()
 
     (* typing expression and remove type variable *)
