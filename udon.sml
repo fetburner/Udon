@@ -10,15 +10,18 @@ structure UdonParser = Join(structure LrParser = LrParser
 fun exec exp stat =
   ((print
     o TypedSyntax.expToString
-    o Typing.f Env.empty) exp
+    o Typing.f Env.empty
+    o Infixing.infixing Env.empty) exp
    handle
-     Typing.Unify (t1, t2) =>
+     Infixing.SyntaxError =>
+       print "Syntax error"
+   | Typing.Unify (t1, t2) =>
        print
          ("Error : failed to unify "
            ^ Type.toString t1
            ^ " and "
            ^ Type.toString t2)
-   | Typing.UnboundVar x =>
+   | Infixing.UnboundVar x =>
        print ("Error : unbound variable " ^ x)
    | UnequalLengths =>
        print "Error : inconsistent arity";

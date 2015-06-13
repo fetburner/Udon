@@ -5,11 +5,11 @@ structure Syntax = struct
     (* constant *)
       CONST of Const.t
     (* variable *)
-    | VAR of string
+    | VAR of Id.t
     (* if M then N_1 else N_2 *)
     | IF of exp * exp * exp
     (* fn (x_1, ... , x_n) => M *)
-    | ABS of string list * exp
+    | ABS of Id.t list * exp
     (* M (N_1, ... , N_n) *)
     | APP of exp * exp list
     (* let d in N end *)
@@ -17,17 +17,14 @@ structure Syntax = struct
   (* abstract syntax tree of declaration *)
   and dec =
     (* val x = M *)
-      VAL of string * exp
+      VAL of Id.t * exp
     (* val rec f = fn (x_1, ... , x_n) => M *)
-    | VALREC of string * string list * exp
+    | VALREC of Id.t * Id.t list * exp
 
   (* pretty-printer *)
   (* as you can see, this implementation is conservative *)
-  local
-    fun seqToString l = PP.seqToString (String.toString, "()", ", ", "(", ")") l
-  in
   fun expToString (CONST c) = Const.toString c
-    | expToString (VAR x) = x
+    | expToString (VAR x) = Id.toString x
     | expToString (IF (m, n1, n2)) =
       "(if "
       ^ expToString m
@@ -38,7 +35,7 @@ structure Syntax = struct
       ^ ")"
     | expToString (ABS (xs, m)) =
       "(fn "
-      ^ seqToString xs
+      ^ Id.seqToString xs
       ^ " => "
       ^ expToString m
       ^ ")"
@@ -58,15 +55,14 @@ structure Syntax = struct
   and decToString dec = PP.seqToString (fn
       VAL (x, m) =>
       "val "
-      ^ x
+      ^ Id.toString x
       ^ " = "
       ^ expToString m
     | VALREC (f, xs, m) =>
       "val rec "
-      ^ f
+      ^ Id.toString f
       ^ " = fn "
-      ^ seqToString xs
+      ^ Id.seqToString xs
       ^ " => "
       ^ expToString m, "", "; ", "", "") dec
-  end
 end

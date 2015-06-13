@@ -9,9 +9,12 @@ Group is
   env.sig
   const.sml
   syntax.sml
+  concreteSyntax.sml
   typedSyntax.sml
   typing.sml
   typing.sig
+  infixing.sml
+  infixing.sig
   udon.grm
   udon.lex
   udon.sml
