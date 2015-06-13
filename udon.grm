@@ -18,7 +18,10 @@
     | FN (* fn *)
     | IF (* if *)
     | IN (* in *)
+    | INFIXL (* infixl *)
+    | INFIXR (* infixr *)
     | LET (* let *)
+    | NONFIX (* nonfix *)
     | OP (* op *)
     | REC (* rec *)
     | THEN (* then *)
@@ -42,6 +45,8 @@
        | APPEXPSEQ_AUX of Syntax.exp list
        | APPEXPSEQ of Syntax.exp list
        | EXP of Syntax.exp
+       | ATDEC of Syntax.dec
+       | DEC of Syntax.dec list
 
 %%
 
@@ -62,10 +67,8 @@ ATEXP : SCON
           (Syntax.VAR VID)
       | OP VID
           (Syntax.VAR VID)
-      | LET VAL VID EQUAL EXP IN EXP END
-          (Syntax.LET_VAL (VID, EXP1, EXP2))
-      | LET VAL REC VID EQUAL FN VIDSEQ FATARROW EXP IN EXP END
-          (Syntax.LET_VALREC (VID, VIDSEQ, EXP1, EXP2))
+      | LET DEC IN EXP END
+          (Syntax.LET (DEC, EXP))
       | LPAREN EXP RPAREN
           (EXP)
 
@@ -114,3 +117,13 @@ EXP : APPEXP
         (Syntax.ABS (VIDSEQ, EXP))
     | IF EXP THEN EXP ELSE EXP
         (Syntax.IF (EXP1, EXP2, EXP3))
+
+ATDEC : VAL VID EQUAL EXP
+	  (Syntax.VAL (VID, EXP))
+      | VAL REC VID EQUAL FN VIDSEQ FATARROW EXP
+	  (Syntax.VALREC (VID, VIDSEQ, EXP))
+
+DEC : ATDEC
+        ([ATDEC])
+    | ATDEC SEMICOLON DEC
+        (ATDEC :: DEC)

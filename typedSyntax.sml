@@ -22,10 +22,13 @@ structure TypedSyntax = struct
     | ABS of id list * exp
     (* M (N_1, ... , N_n) *)
     | APP of exp * exp list
-    (* let val x : T = M in N end *)
-    | LET_VAL of id * exp * exp
-    (* let val rec f : T_1 = fn (x_1 : T_21, ... , x_2n : T_n) => M in N *)
-    | LET_VALREC of id * id list * exp * exp
+    (* let d in N end *)
+    | LET of dec list * exp
+  and dec =
+    (* val x : T = M *)
+      VAL of id * exp
+    (* val rec f : T_1 = fn (x_1 : T_21, ... , x_2n : T_n) => M *)
+    | VALREC of id * id list * exp
 
   fun expToString (E (e, t)) =
     "(" ^ expBodyToString e ^ " : " ^ Type.toString t ^ ")"
@@ -51,25 +54,26 @@ structure TypedSyntax = struct
         ^ " "
         ^ expSeqToString ns
         ^ ")"
-    | expBodyToString (LET_VAL (x, m, n)) =
-        "let val "
-        ^ idToString x
-        ^ " = "
-        ^ expToString m
+    | expBodyToString (LET (d, m)) =
+        "let "
+        ^ decToString d
         ^ " in "
-        ^ expToString n
-        ^ " end"
-    | expBodyToString (LET_VALREC (f, xs, m, n)) =
-        "let val rec "
-        ^ idToString f
-        ^ " = fn "
-        ^ idSeqToString xs
-        ^ " => "
         ^ expToString m
-        ^ " in "
-        ^ expToString n
         ^ " end"
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
+  and decToString dec = PP.seqToString (fn
+      VAL (x, m) =>
+      "val "
+      ^ idToString x
+      ^ " = "
+      ^ expToString m
+    | VALREC (f, xs, m) =>
+      "val rec "
+      ^ idToString f
+      ^ " = fn "
+      ^ idSeqToString xs
+      ^ " => "
+      ^ expToString m, "", "; ", "", "") dec
 
   (* return type of typed expression *)
   fun expTypeOf (E (_, t)) = t

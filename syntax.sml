@@ -12,10 +12,14 @@ structure Syntax = struct
     | ABS of string list * exp
     (* M (N_1, ... , N_n) *)
     | APP of exp * exp list
-    (* let val x = M in N end *)
-    | LET_VAL of string * exp * exp
-    (* let val rec f = fn (x_1, ... , x_n) => M in N *)
-    | LET_VALREC of string * string list * exp * exp
+    (* let d in N end *)
+    | LET of dec list * exp
+  (* abstract syntax tree of declaration *)
+  and dec =
+    (* val x = M *)
+      VAL of string * exp
+    (* val rec f = fn (x_1, ... , x_n) => M *)
+    | VALREC of string * string list * exp
 
   (* pretty-printer *)
   (* as you can see, this implementation is conservative *)
@@ -44,24 +48,25 @@ structure Syntax = struct
       ^ " "
       ^ expSeqToString ns
       ^ ")"
-    | expToString (LET_VAL (x, m, n)) =
-      "let val "
+    | expToString (LET (d, m)) =
+      "let "
+      ^ decToString d
+      ^ " in "
+      ^ expToString m
+      ^ " end"
+  and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
+  and decToString dec = PP.seqToString (fn
+      VAL (x, m) =>
+      "val "
       ^ x
       ^ " = "
       ^ expToString m
-      ^ " in "
-      ^ expToString n
-      ^ " end"
-    | expToString (LET_VALREC (f, xs, m, n)) =
-      "let val rec "
+    | VALREC (f, xs, m) =>
+      "val rec "
       ^ f
       ^ " = fn "
       ^ seqToString xs
       ^ " => "
-      ^ expToString m
-      ^ " in "
-      ^ expToString n
-      ^ " end"
-  and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
+      ^ expToString m, "", "; ", "", "") dec
   end
 end
