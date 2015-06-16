@@ -24,8 +24,6 @@ structure TypedSyntax = struct
     | APP of exp * exp
     (* let d in N end *)
     | LET of dec list * exp
-    (* op (+) (M_1, ... , M_n) *)
-    | PRIM of Prim.t * exp list
     (* (M_1, ... , M_n) *)
     | TUPLE of exp list
     (* case M of (x_1, ... , x_n) => N *)
@@ -66,12 +64,6 @@ structure TypedSyntax = struct
         ^ " in "
         ^ expToString m
         ^ " end"
-    | expBodyToString (PRIM (p, ms)) =
-        "(op"
-        ^ Prim.toString p
-        ^ " "
-        ^ expSeqToString ms
-        ^ ")"
     | expBodyToString (TUPLE ms) =
         expSeqToString ms
     | expBodyToString (CASE (m, xs, n)) =
