@@ -67,7 +67,7 @@ ATEXP : SCON
       | VID
           (ConcreteSyntax.VAR VID)
       | OP VID
-          (ConcreteSyntax.VAR VID)
+          (ConcreteSyntax.OP VID)
       | LET DEC IN EXP END
           (ConcreteSyntax.LET (DEC, EXP))
       | LPAREN EXP RPAREN
