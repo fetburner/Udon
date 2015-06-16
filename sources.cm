@@ -8,6 +8,8 @@ Group is
   env.sml
   env.sig
   const.sml
+  assoc.sml
+  prim.sml
   syntax.sml
   concreteSyntax.sml
   typedSyntax.sml

@@ -14,6 +14,8 @@ structure Syntax = struct
     | APP of exp * exp list
     (* let d in N end *)
     | LET of dec list * exp
+    (* op (+) (M_1, ... , M_n) *)
+    | PRIM of Prim.t * exp list
   (* abstract syntax tree of declaration *)
   and dec =
     (* val x = M *)
@@ -51,6 +53,12 @@ structure Syntax = struct
       ^ " in "
       ^ expToString m
       ^ " end"
+    | expToString (PRIM (p, ms)) =
+      "(op"
+      ^ Prim.toString p
+      ^ " "
+      ^ expSeqToString ms
+      ^ ")"
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
   and decToString dec = PP.seqToString (fn
       VAL (x, m) =>

@@ -1,10 +1,9 @@
 structure Infixing : INFIXING = struct
-  datatype assoc = LEFT_ASSOC | RIGHT_ASSOC
-
   (* exception that arises when unbound variable occur *)
   exception UnboundVar of string
   exception SyntaxError
   local
+    open Assoc
     open ConcreteSyntax
     datatype token = EXP_TOKEN of Syntax.exp | BINOP_TOKEN of Id.t * int * assoc
   in
@@ -64,23 +63,12 @@ structure Infixing : INFIXING = struct
           in
             infixingLet (Syntax.VALREC (f', xs', m') :: dec') env' dec body
           end
-      | infixingLet dec' env (INFIXL (d, vids) :: dec) body =
+      | infixingLet dec' env (INFIX (assoc, d, vids) :: dec) body =
           let
             val vids' =
               map (fn vid =>
                 case Env.findName (env, vid) of
-                     SOME (vid', _) => (vid', SOME (d, LEFT_ASSOC))
-                   | NONE => raise (UnboundVar vid)) vids
-            val env' = Env.insertList (env, vids')
-          in
-            infixingLet dec' env' dec body
-          end
-      | infixingLet dec' env (INFIXR (d, vids) :: dec) body =
-          let
-            val vids' =
-              map (fn vid =>
-                case Env.findName (env, vid) of
-                     SOME (vid', _) => (vid', SOME (d, RIGHT_ASSOC))
+                     SOME (vid', _) => (vid', SOME (d, assoc))
                    | NONE => raise (UnboundVar vid)) vids
             val env' = Env.insertList (env, vids')
           in

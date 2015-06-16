@@ -7,11 +7,21 @@ structure UdonParser = Join(structure LrParser = LrParser
                            structure ParserData = UdonLrVals.ParserData
                            structure Lex = UdonLex)
 
+val primitives =
+  [(Id.gensym "+", Prim.PLUS),
+   (Id.gensym "-", Prim.MINUS),
+   (Id.gensym "*", Prim.TIMES),
+   (Id.gensym "<=", Prim.LE)]
+
 fun exec exp stat =
   ((print
     o TypedSyntax.expToString
-    o Typing.f Env.empty
-    o Infixing.infixing Env.empty) exp
+    o Typing.f
+        (Env.fromList (map (fn (id, p) =>
+          (id, Prim.typeOf p)) primitives))
+    o Infixing.infixing
+        (Env.fromList (map (fn (id, p) =>
+          (id, Prim.priority p)) primitives))) exp
    handle
      Infixing.SyntaxError =>
        print "Syntax error"

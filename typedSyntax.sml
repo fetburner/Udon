@@ -24,6 +24,8 @@ structure TypedSyntax = struct
     | APP of exp * exp list
     (* let d in N end *)
     | LET of dec list * exp
+    (* op (+) (M_1, ... , M_n) *)
+    | PRIM of Prim.t * exp list
   and dec =
     (* val x : T = M *)
       VAL of id * exp
@@ -60,6 +62,12 @@ structure TypedSyntax = struct
         ^ " in "
         ^ expToString m
         ^ " end"
+    | expBodyToString (PRIM (p, ms)) =
+        "(op"
+        ^ Prim.toString p
+        ^ " "
+        ^ expSeqToString ms
+        ^ ")"
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
   and decToString dec = PP.seqToString (fn
       VAL (x, m) =>

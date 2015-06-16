@@ -81,6 +81,14 @@ structure Typing : TYPING = struct
           end
       | g env (Syntax.LET (dec, m)) =
           typingLet [] env dec m
+      | g env (Syntax.PRIM (p, ms)) =
+          let
+            val t = Type.genvar ()
+            val ms' = map (g env) ms
+          in
+            unify (Prim.typeOf p, Type.FUN (expSeqTypeOf ms', t));
+            E (PRIM (p, ms'), t)
+          end
     and typingLet dec' env [] body =
           let 
             val body' = g env body
@@ -121,6 +129,8 @@ structure Typing : TYPING = struct
       | derefExpBody (LET (dec, m)) =
           (List.app derefDec dec;
            derefExp m)
+      | derefExpBody (PRIM (_, ms)) =
+          List.app derefExp ms
       | derefExpBody _ = ()
     (* replace type variable with appropriate type in body of typed declaration *)
     and derefDec (VAL ((_, t), m)) =
