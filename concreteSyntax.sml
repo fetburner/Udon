@@ -9,10 +9,8 @@ structure ConcreteSyntax = struct
     | OP of string
     (* if M then N_1 else N_2 *)
     | IF of exp * exp * exp
-    (* fn (x_1, ... , x_n) => M *)
-    | ABS of string list * exp
-    (* M (N_1, ... , N_n) *)
-    | APP of exp * exp list
+    (* fn x => M *)
+    | ABS of string * exp
     (* let d in N end *)
     | LET of dec list * exp
     (* sequence of expression *)
@@ -27,8 +25,8 @@ structure ConcreteSyntax = struct
   and dec =
     (* val x = M *)
       VAL of string * exp
-    (* val rec f = fn (x_1, ... , x_n) => M *)
-    | VALREC of string * string list * exp
+    (* val rec f = fn x => M *)
+    | VALREC of string * string * exp
     (* infix d vid_1 ... vid_n *)
     (* infixr d vid_1 ... vid_n *)
     | INFIX of Assoc.assoc * int * string list
@@ -52,15 +50,11 @@ structure ConcreteSyntax = struct
       ^ " else "
       ^ expToString n2
       ^ ""
-    | expToString (ABS (xs, m)) =
+    | expToString (ABS (x, m)) =
       "fn "
-      ^ seqToString xs
+      ^ x
       ^ " => "
       ^ expToString m
-    | expToString (APP (m, ns)) =
-      expToString m
-      ^ " "
-      ^ expSeqToString ns
     | expToString (LET (d, m)) =
       "let "
       ^ decToString d
@@ -90,11 +84,11 @@ structure ConcreteSyntax = struct
       ^ x
       ^ " = "
       ^ expToString m
-    | VALREC (f, xs, m) =>
+    | VALREC (f, x, m) =>
       "val rec "
       ^ f
       ^ " = fn "
-      ^ seqToString xs
+      ^ x
       ^ " => "
       ^ expToString m
     | INFIX (Assoc.LEFT_ASSOC, d, vids) =>

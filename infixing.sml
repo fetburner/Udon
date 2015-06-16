@@ -24,20 +24,13 @@ structure Infixing : INFIXING = struct
           in
             Syntax.IF (m', n1', n2')
           end
-      | infixing env (ABS (xs, m)) =
+      | infixing env (ABS (x, m)) =
           let
-            val xs' = map Id.gensym xs
-            val env' = Env.insertList (env, map (fn x => (x, NONE)) xs')
+            val x' = Id.gensym x
+            val env' = Env.insert (env, x', NONE)
             val m' = infixing env' m
           in
-            Syntax.ABS (xs', m')
-          end
-      | infixing env (APP (m, ns)) =
-          let
-            val m' = infixing env m
-            val ns' = map (infixing env) ns
-          in
-            Syntax.APP (m', ns')
+            Syntax.ABS (x', m')
           end
       | infixing env (LET (dec, m)) = infixingLet [] env dec m
       | infixing env (SEQ ms) = infixingSeq env ms
@@ -64,15 +57,14 @@ structure Infixing : INFIXING = struct
           in
             infixingLet (Syntax.VAL (x', m') :: dec') env' dec body
           end
-      | infixingLet dec' env (VALREC (f, xs, m) :: dec) body =
+      | infixingLet dec' env (VALREC (f, x, m) :: dec) body =
           let 
             val f' = Id.gensym f
-            val xs' = map Id.gensym xs
+            val x' = Id.gensym x
             val env' = Env.insert (env, f', NONE)
-            val m' =
-              infixing (Env.insertList (env', map (fn x => (x, NONE)) xs')) m
+            val m' = infixing (Env.insert (env', x', NONE)) m
           in
-            infixingLet (Syntax.VALREC (f', xs', m') :: dec') env' dec body
+            infixingLet (Syntax.VALREC (f', x', m') :: dec') env' dec body
           end
       | infixingLet dec' env (INFIX (assoc, d, vids) :: dec) body =
           let
@@ -122,7 +114,7 @@ structure Infixing : INFIXING = struct
               | NONE => NONE)
     and parseTerm' env e seq =
           (case parseFactor env seq of
-                SOME (e', seq') => parseTerm' env (Syntax.APP (e, [e'])) seq'
+                SOME (e', seq') => parseTerm' env (Syntax.APP (e, e')) seq'
               | NONE => SOME (e, seq))
 
     and parseExp env seq =
@@ -142,13 +134,13 @@ structure Infixing : INFIXING = struct
                           if prio1 = prio2 andalso assoc1 <> assoc2 then
                             raise SyntaxError
                           else if prio1 < prio2 orelse prio1 = prio2 andalso assoc1 = RIGHT_ASSOC then
-                            Option.map (fn (e, seq0) => (Syntax.APP (Syntax.VAR op1, [Syntax.TUPLE [e1, e]]), seq0))
+                            Option.map (fn (e, seq0) => (Syntax.APP (Syntax.VAR op1, Syntax.TUPLE [e1, e]), seq0))
                               (parseExp' env e2 (op2, prio2, assoc2) seq'')
                           else
-                            parseExp' env (Syntax.APP (Syntax.VAR op1, [Syntax.TUPLE [e1, e2]]))
+                            parseExp' env (Syntax.APP (Syntax.VAR op1, Syntax.TUPLE [e1, e2]))
                               (op2, prio2, assoc2) seq''
                       | SOME (EXP_TOKEN _, _) => NONE
-                      | NONE => SOME (Syntax.APP (Syntax.VAR op1, [Syntax.TUPLE [e1, e2]]), seq'))
+                      | NONE => SOME (Syntax.APP (Syntax.VAR op1, Syntax.TUPLE [e1, e2]), seq'))
               | NONE => NONE)
   end
 end

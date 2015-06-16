@@ -8,14 +8,12 @@ structure Syntax = struct
     | VAR of Id.t
     (* if M then N_1 else N_2 *)
     | IF of exp * exp * exp
-    (* fn (x_1, ... , x_n) => M *)
-    | ABS of Id.t list * exp
-    (* M (N_1, ... , N_n) *)
-    | APP of exp * exp list
+    (* fn x => M *)
+    | ABS of Id.t * exp
+    (* M N *)
+    | APP of exp * exp
     (* let d in N end *)
     | LET of dec list * exp
-    (* op (+) (M_1, ... , M_n) *)
-    | PRIM of Prim.t * exp list
     (* (M_1, ... , M_n) *)
     | TUPLE of exp list
     (* case M of (x_1, ... , x_n) => N *)
@@ -24,8 +22,8 @@ structure Syntax = struct
   and dec =
     (* val x = M *)
       VAL of Id.t * exp
-    (* val rec f = fn (x_1, ... , x_n) => M *)
-    | VALREC of Id.t * Id.t list * exp
+    (* val rec f = fn x => M *)
+    | VALREC of Id.t * Id.t * exp
 
   (* pretty-printer *)
   (* as you can see, this implementation is conservative *)
@@ -39,17 +37,17 @@ structure Syntax = struct
       ^ " else "
       ^ expToString n2
       ^ ")"
-    | expToString (ABS (xs, m)) =
+    | expToString (ABS (x, m)) =
       "(fn "
-      ^ Id.seqToString xs
+      ^ Id.toString x
       ^ " => "
       ^ expToString m
       ^ ")"
-    | expToString (APP (m, ns)) =
+    | expToString (APP (m, n)) =
       "("
       ^ expToString m
       ^ " "
-      ^ expSeqToString ns
+      ^ expToString n
       ^ ")"
     | expToString (LET (d, m)) =
       "let "
@@ -57,12 +55,6 @@ structure Syntax = struct
       ^ " in "
       ^ expToString m
       ^ " end"
-    | expToString (PRIM (p, ms)) =
-      "(op"
-      ^ Prim.toString p
-      ^ " "
-      ^ expSeqToString ms
-      ^ ")"
     | expToString (TUPLE ms) =
         expSeqToString ms
     | expToString (CASE (m, xs, n)) =
@@ -80,11 +72,11 @@ structure Syntax = struct
       ^ Id.toString x
       ^ " = "
       ^ expToString m
-    | VALREC (f, xs, m) =>
+    | VALREC (f, x, m) =>
       "val rec "
       ^ Id.toString f
       ^ " = fn "
-      ^ Id.seqToString xs
+      ^ Id.toString x
       ^ " => "
       ^ expToString m, "", "; ", "", "") dec
 end

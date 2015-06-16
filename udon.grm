@@ -97,7 +97,7 @@ SEQEXP : ATEXP
 EXP : SEQEXP
         (ConcreteSyntax.SEQ SEQEXP)
     | FN VID FATARROW EXP
-        (ConcreteSyntax.ABS ([VID], EXP))
+        (ConcreteSyntax.ABS (VID, EXP))
     | IF EXP THEN EXP ELSE EXP
         (ConcreteSyntax.IF (EXP1, EXP2, EXP3))
     | CASE EXP OF VIDSEQ FATARROW EXP
@@ -105,8 +105,8 @@ EXP : SEQEXP
 
 ATDEC : VAL VID EQUAL EXP
           (ConcreteSyntax.VAL (VID, EXP))
-      | VAL REC VID EQUAL FN VIDSEQ FATARROW EXP
-          (ConcreteSyntax.VALREC (VID, VIDSEQ, EXP))
+      | VAL REC VID EQUAL FN VID FATARROW EXP
+          (ConcreteSyntax.VALREC (VID1, VID2, EXP))
       | INFIX DIGIT_OPT NVID
           (ConcreteSyntax.INFIX (Assoc.LEFT_ASSOC, getOpt (DIGIT_OPT, 0), NVID))
       | INFIXR DIGIT_OPT NVID
