@@ -10,64 +10,76 @@
 %start EXP
 
 (* Terminal symbols *)
-%term VID of string (* value identifier *)
-    | SCON of Const.t (* special constant *)
+%term IDENT of string (* value identifier *)
+    | BOOL of bool
+    | DIGIT of int
     | ELSE (* else *)
     | END (* end *)
     | FN (* fn *)
     | IF (* if *)
     | IN (* in *)
+    | INFIX (* infix *)
+    | INFIXR (* infixr *)
     | LET (* let *)
+    | NONFIX (* nonfix *)
     | OP (* op *)
     | REC (* rec *)
     | THEN (* then *)
     | VAL (* val *)
     | EQUAL (* = *)
     | COMMA (* , *)
-    | PLUS (* + *)
-    | MINUS (* - *)
-    | AST (* * *)
     | LPAREN (* ( *)
     | RPAREN (* ) *)
-    | LE (* <= *)
     | FATARROW (* => *)
     | SEMICOLON (* ; *)
 
 (* Nonterminal symbols *)
-%nonterm ATEXP of Syntax.exp
-       | ATEXPSEQ_AUX of Syntax.exp list
-       | ATEXPSEQ of Syntax.exp list
+%nonterm VID of string
+       | SCON of Const.t
+       | ATEXP of ConcreteSyntax.exp
+       | ATEXPSEQ_AUX of ConcreteSyntax.exp list
+       | ATEXPSEQ of ConcreteSyntax.exp list
        | VIDSEQ_AUX of string list
        | VIDSEQ of string list
-       | PRIM of Prim.t
-       | APPEXP of Syntax.exp
-       | APPEXPSEQ_AUX of Syntax.exp list
-       | APPEXPSEQ of Syntax.exp list
-       | EXP of Syntax.exp
+       | APPEXP of ConcreteSyntax.exp
+       | SEQEXP of ConcreteSyntax.exp list
+       | EXP of ConcreteSyntax.exp
+       | ATDEC of ConcreteSyntax.dec
+       | DEC of ConcreteSyntax.dec list
+       | DIGIT_OPT of int option
+       | NVID of string list
 
 %%
 
 (* Production rules *)
-ATEXP : SCON
-          (Syntax.CONST SCON)
-      | VID
-          (Syntax.VAR VID)
-      | LET VAL VID EQUAL EXP IN EXP END
-          (Syntax.LET_VAL (VID, EXP1, EXP2))
-      | LET VAL REC VID EQUAL FN VIDSEQ FATARROW EXP IN EXP END
-          (Syntax.LET_VALREC (VID, VIDSEQ, EXP1, EXP2))
-      | LPAREN EXP RPAREN
-          (EXP)
+VID : IDENT
+          (IDENT)
+    | EQUAL
+          ("=")
 
-ATEXPSEQ_AUX : ATEXP
-                 ([ATEXP])
+SCON : BOOL
+          (Const.BOOL BOOL)
+     | DIGIT
+          (Const.INT DIGIT)
+
+ATEXP : SCON
+          (ConcreteSyntax.CONST SCON)
+      | VID
+          (ConcreteSyntax.VAR VID)
+      | OP VID
+          (ConcreteSyntax.OP VID)
+      | LET DEC IN EXP END
+          (ConcreteSyntax.LET (DEC, EXP))
+      | LPAREN EXP RPAREN
+          (ConcreteSyntax.PAREN EXP)
+
+ATEXPSEQ_AUX : ATEXP COMMA ATEXP
+                 ([ATEXP1, ATEXP2])
              | ATEXP COMMA ATEXPSEQ_AUX
                  (ATEXP :: ATEXPSEQ_AUX)
 
 ATEXPSEQ : LPAREN RPAREN
              ([])
-         | ATEXP
-             ([ATEXP])
          | LPAREN ATEXPSEQ_AUX RPAREN
              (ATEXPSEQ_AUX)
 
@@ -83,35 +95,45 @@ VIDSEQ : LPAREN RPAREN
        | LPAREN VIDSEQ_AUX RPAREN
            (VIDSEQ_AUX)
 
-PRIM : PLUS
-         (Prim.PLUS)
-     | MINUS
-         (Prim.MINUS)
-     | AST
-         (Prim.TIMES)
-     | LE
-         (Prim.LE)
-
-APPEXPSEQ_AUX : APPEXP
-		  ([APPEXP])
-	      | APPEXP COMMA APPEXPSEQ_AUX
-		  (APPEXP :: APPEXPSEQ_AUX)
-
-APPEXPSEQ : LPAREN RPAREN
-	      ([])
-	  | LPAREN APPEXPSEQ_AUX RPAREN
-	      (APPEXPSEQ_AUX)
-
 APPEXP : ATEXP
            (ATEXP)
        | APPEXP ATEXPSEQ
-           (Syntax.APP (APPEXP, ATEXPSEQ))
-       | OP PRIM APPEXPSEQ
-           (Syntax.PRIM (PRIM, APPEXPSEQ))
+           (ConcreteSyntax.APP (APPEXP, ATEXPSEQ))
 
-EXP : APPEXP
-        (APPEXP)
+SEQEXP : APPEXP
+	   ([APPEXP])
+       | APPEXP SEQEXP
+           (APPEXP :: SEQEXP)
+
+EXP : SEQEXP
+        (ConcreteSyntax.SEQ SEQEXP)
     | FN VIDSEQ FATARROW EXP
-        (Syntax.ABS (VIDSEQ, EXP))
+        (ConcreteSyntax.ABS (VIDSEQ, EXP))
     | IF EXP THEN EXP ELSE EXP
-        (Syntax.IF (EXP1, EXP2, EXP3))
+        (ConcreteSyntax.IF (EXP1, EXP2, EXP3))
+
+ATDEC : VAL VID EQUAL EXP
+          (ConcreteSyntax.VAL (VID, EXP))
+      | VAL REC VID EQUAL FN VIDSEQ FATARROW EXP
+          (ConcreteSyntax.VALREC (VID, VIDSEQ, EXP))
+      | INFIX DIGIT_OPT NVID
+          (ConcreteSyntax.INFIX (Assoc.LEFT_ASSOC, getOpt (DIGIT_OPT, 0), NVID))
+      | INFIXR DIGIT_OPT NVID
+          (ConcreteSyntax.INFIX (Assoc.RIGHT_ASSOC, getOpt (DIGIT_OPT, 0), NVID))
+      | NONFIX NVID
+          (ConcreteSyntax.NONFIX NVID)
+
+DEC : ATDEC
+        ([ATDEC])
+    | ATDEC SEMICOLON DEC
+        (ATDEC :: DEC)
+
+DIGIT_OPT :
+              (NONE)
+          | DIGIT
+              (SOME DIGIT)
+
+NVID : VID
+         ([VID])
+     | VID NVID
+         (VID :: NVID)

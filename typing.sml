@@ -42,8 +42,7 @@ structure Typing : TYPING = struct
   end
 
   (* exception that arises when unbound variable occur *)
-  exception UnboundVar of string
-
+  exception UnboundVar of Id.t
   local
     open TypedSyntax
   in
@@ -51,9 +50,9 @@ structure Typing : TYPING = struct
     fun g env (Syntax.CONST c) =
           E (CONST c, Const.typeOf c)
       | g env (Syntax.VAR x) =
-          (case Env.findName (env, x) of
+          (case Env.find (env, x) of
              NONE => raise (UnboundVar x)
-           | SOME (id, t) => E (VAR id, t))
+           | SOME t => E (VAR x, t))
       | g env (Syntax.IF (m, n1, n2)) =
           let
             val m' = g env m
@@ -66,7 +65,7 @@ structure Typing : TYPING = struct
           end
       | g env (Syntax.ABS (xs, m)) =
           let
-            val xs' = List.map (fn x => (Id.gensym x, Type.genvar ())) xs
+            val xs' = List.map (fn x => (x, Type.genvar ())) xs
             val m' = g (Env.insertList (env, xs')) m
           in
             E (ABS (xs', m'), Type.FUN (idSeqTypeOf xs', expTypeOf m'))
@@ -80,25 +79,8 @@ structure Typing : TYPING = struct
             unify (expTypeOf m', Type.FUN (expSeqTypeOf ns', t12));
             E (APP (m', ns'), t12)
           end
-      | g env (Syntax.LET_VAL (x, m, n)) =
-          let
-            val m' = g env m
-            val id = Id.gensym x
-            val n' = g (Env.insert (env, id, expTypeOf m')) n
-          in
-            E (LET_VAL ((id, expTypeOf m'), m', n'), expTypeOf n')
-          end
-      | g env (Syntax.LET_VALREC (f, xs, m, n)) =
-          let
-            val t1 = Type.genvar ()
-            val xs' = List.map (fn x => (Id.gensym x, Type.genvar ())) xs
-            val id = Id.gensym f
-            val m' = g (Env.insertList (env, (id, t1) :: xs')) m
-            val n' = g (Env.insert (env, id, t1)) n
-          in
-            unify (t1, Type.FUN (idSeqTypeOf xs', expTypeOf m'));
-            E (LET_VALREC ((id, t1), xs', m', n'), expTypeOf n')
-          end
+      | g env (Syntax.LET (dec, m)) =
+          typingLet [] env dec m
       | g env (Syntax.PRIM (p, ms)) =
           let
             val t = Type.genvar ()
@@ -106,6 +88,29 @@ structure Typing : TYPING = struct
           in
             unify (Prim.typeOf p, Type.FUN (expSeqTypeOf ms', t));
             E (PRIM (p, ms'), t)
+          end
+    and typingLet dec' env [] body =
+          let 
+            val body' = g env body
+          in
+            E (LET (rev dec', body'), expTypeOf body')
+          end
+      | typingLet dec' env (Syntax.VAL (x, m) :: dec) body =
+          let
+            val m' = g env m
+            val env' = Env.insert (env, x, expTypeOf m')
+          in
+            typingLet (VAL ((x, expTypeOf m'), m') :: dec') env' dec body
+          end
+      | typingLet dec' env (Syntax.VALREC (f, xs, m) :: dec) body =
+          let
+            val t1 = Type.genvar ()
+            val xs' = List.map (fn x => (x, Type.genvar ())) xs
+            val m' = g (Env.insertList (env, (f, t1) :: xs')) m
+            val env' = Env.insert (env, f, t1)
+          in
+            unify (t1, Type.FUN (idSeqTypeOf xs', expTypeOf m'));
+            typingLet (VALREC ((f, t1), xs', m') :: dec') env' dec body
           end
 
     (* replace type variable with appropriate type in typed expression *)
@@ -121,18 +126,20 @@ structure Typing : TYPING = struct
       | derefExpBody (APP (m, ns)) =
           (derefExp m;
            List.app derefExp ns)
-      | derefExpBody (LET_VAL ((_, t), m, n)) =
-          (derefType t;
-           derefExp m;
-           derefExp n)
-      | derefExpBody (LET_VALREC ((_, t1), xs, m, n)) =
-          (derefType t1;
-           List.app (derefType o #2) xs;
-           derefExp m;
-           derefExp n)
+      | derefExpBody (LET (dec, m)) =
+          (List.app derefDec dec;
+           derefExp m)
       | derefExpBody (PRIM (_, ms)) =
           List.app derefExp ms
       | derefExpBody _ = ()
+    (* replace type variable with appropriate type in body of typed declaration *)
+    and derefDec (VAL ((_, t), m)) =
+          (derefType t;
+           derefExp m)
+      | derefDec (VALREC ((_, t1), xs, m)) =
+          (derefType t1;
+           List.app (derefType o #2) xs;
+           derefExp m)
 
     (* typing expression and remove type variable *)
     fun f env m =

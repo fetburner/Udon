@@ -17,6 +17,7 @@ fun error (e, pos, _) = (print e; print "\n")
 
 space=[\ \t\n\r];
 digit=[0-9];
+letter=[a-z];
 alpha=[A-Za-z];
 
 
@@ -28,24 +29,24 @@ alpha=[A-Za-z];
 "fn" => (FN((),()));
 "if" => (IF((),()));
 "in" => (IN((),()));
+"infix" => (INFIX((),()));
+"infixr" => (INFIXR((),()));
 "let" => (LET((),()));
+"nonfix" => (NONFIX((),()));
 "op" => (OP((),()));
 "rec" => (REC((),()));
 "then" => (THEN((),()));
 "val" => (VAL((),()));
-"true" => (SCON(Const.BOOL(true),(),()));
-"false" => (SCON(Const.BOOL(false),(),()));
+"true" => (BOOL(true,(),()));
+"false" => (BOOL(false,(),()));
 "=" => (EQUAL((),()));
 "," => (COMMA((),()));
-"+" => (PLUS((),()));
-"-" => (MINUS((),()));
-"*" => (AST((),()));
 "(" => (LPAREN((),()));
 ")" => (RPAREN((),()));
-"<=" => (LE((),()));
 "=>" => (FATARROW((),()));
 ";" => (SEMICOLON((),()));
-"~"? {digit}+ => (SCON(Const.INT(valOf(Int.fromString yytext)),(),()));
-{alpha} ({alpha} | {digit} | "_")* => (VID(yytext,(),()));
+"~"? {digit}+ => (DIGIT(valOf(Int.fromString yytext),(),()));
+{letter} ({alpha} | {digit} | "'" |  "_")* => (IDENT(yytext,(),()));
+("!" | "%" | "&" | "$" | "#" | "+" | "-" | "/" | ":" | "<" | "=" | ">" | "?" | "@" | "\\" | "~" | "`" | "^" | "|" | "*")+ => (IDENT(yytext,(),()));
 {space}+ => (lex()(* skip spaces and continue lexing *));
 
