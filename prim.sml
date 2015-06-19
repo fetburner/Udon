@@ -17,7 +17,7 @@ structure Prim = struct
     | priority LE = SOME (4, Assoc.LEFT_ASSOC)
 
   fun typeOf (PLUS | MINUS | TIMES) =
-        Type.FUN ([Type.INT, Type.INT], Type.INT)
+        Type.FUN ([Type.TUPLE [Type.INT, Type.INT]], Type.INT)
     | typeOf LE =
-        Type.FUN ([Type.INT, Type.INT], Type.BOOL)
+        Type.FUN ([Type.TUPLE [Type.INT, Type.INT]], Type.BOOL)
 end

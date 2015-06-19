@@ -142,13 +142,13 @@ structure Infixing : INFIXING = struct
                           if prio1 = prio2 andalso assoc1 <> assoc2 then
                             raise SyntaxError
                           else if prio1 < prio2 orelse prio1 = prio2 andalso assoc1 = RIGHT_ASSOC then
-                            Option.map (fn (e, seq0) => (Syntax.APP (Syntax.VAR op1, [e1, e]), seq0))
+                            Option.map (fn (e, seq0) => (Syntax.APP (Syntax.VAR op1, [Syntax.TUPLE [e1, e]]), seq0))
                               (parseExp' env e2 (op2, prio2, assoc2) seq'')
                           else
-                            parseExp' env (Syntax.APP (Syntax.VAR op1, [e1, e2]))
+                            parseExp' env (Syntax.APP (Syntax.VAR op1, [Syntax.TUPLE [e1, e2]]))
                               (op2, prio2, assoc2) seq''
                       | SOME (EXP_TOKEN _, _) => NONE
-                      | NONE => SOME (Syntax.APP (Syntax.VAR op1, [e1, e2]), seq'))
+                      | NONE => SOME (Syntax.APP (Syntax.VAR op1, [Syntax.TUPLE [e1, e2]]), seq'))
               | NONE => NONE)
   end
 end
