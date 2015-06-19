@@ -19,6 +19,10 @@ structure ConcreteSyntax = struct
     | SEQ of exp list
     (* ( M ) *)
     | PAREN of exp
+    (* (M_1, ... , M_n) *)
+    | TUPLE of exp list
+    (* case M of (x_1, ... , x_n) => N *)
+    | CASE of exp * string list * exp
   (* abstract syntax tree of declaration *)
   and dec =
     (* val x = M *)
@@ -69,6 +73,16 @@ structure ConcreteSyntax = struct
       "("
       ^ expToString m
       ^ ")"
+    | expToString (TUPLE ms) =
+        expSeqToString ms
+    | expToString (CASE (m, xs, n)) =
+        "(case "
+        ^ expToString m
+        ^ " of "
+        ^ seqToString xs
+        ^ " => "
+        ^ expToString n
+        ^ ")"
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
   and decToString dec = PP.seqToString (fn
       VAL (x, m) =>
