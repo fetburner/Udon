@@ -19,6 +19,8 @@ structure Typing : TYPING = struct
       | unify (FUN (t11s, t12), FUN (t21s, t22)) =
           (ListPair.appEq unify (t11s, t21s);
            unify (t12, t22))
+      | unify (TUPLE t1s, TUPLE t2s) =
+           ListPair.appEq unify (t1s, t2s)
       | unify (VAR (ref (SOME t1)), t2) = unify (t1, t2)
       | unify (t1, VAR (ref (SOME t2))) = unify (t1, t2)
       | unify (VAR (r1 as (ref NONE)), t2 as (VAR (r2 as (ref NONE)))) =
