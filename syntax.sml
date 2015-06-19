@@ -16,6 +16,10 @@ structure Syntax = struct
     | LET of dec list * exp
     (* op (+) (M_1, ... , M_n) *)
     | PRIM of Prim.t * exp list
+    (* (M_1, ... , M_n) *)
+    | TUPLE of exp list
+    (* case M of (x_1, ... , x_n) => N *)
+    | CASE of exp * Id.t list * exp
   (* abstract syntax tree of declaration *)
   and dec =
     (* val x = M *)
@@ -59,6 +63,16 @@ structure Syntax = struct
       ^ " "
       ^ expSeqToString ms
       ^ ")"
+    | expToString (TUPLE ms) =
+        expSeqToString ms
+    | expToString (CASE (m, xs, n)) =
+        "(case "
+        ^ expToString m
+        ^ " of "
+        ^ Id.seqToString xs
+        ^ " => "
+        ^ expToString n
+        ^ ")"
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
   and decToString dec = PP.seqToString (fn
       VAL (x, m) =>
