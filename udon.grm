@@ -13,6 +13,7 @@
 %term IDENT of string (* value identifier *)
     | BOOL of bool
     | DIGIT of int
+    | CASE (* case *)
     | ELSE (* else *)
     | END (* end *)
     | FN (* fn *)
@@ -22,6 +23,7 @@
     | INFIXR (* infixr *)
     | LET (* let *)
     | NONFIX (* nonfix *)
+    | OF (* of *)
     | OP (* op *)
     | REC (* rec *)
     | THEN (* then *)
@@ -37,15 +39,13 @@
 %nonterm VID of string
        | SCON of Const.t
        | ATEXP of ConcreteSyntax.exp
-       | ATEXPSEQ_AUX of ConcreteSyntax.exp list
-       | ATEXPSEQ of ConcreteSyntax.exp list
        | VIDSEQ_AUX of string list
        | VIDSEQ of string list
-       | APPEXP of ConcreteSyntax.exp
        | SEQEXP of ConcreteSyntax.exp list
        | EXP of ConcreteSyntax.exp
        | ATDEC of ConcreteSyntax.dec
        | DEC of ConcreteSyntax.dec list
+       | TUPLE_BODY of ConcreteSyntax.exp list
        | DIGIT_OPT of int option
        | NVID of string list
 
@@ -64,6 +64,10 @@ SCON : BOOL
 
 ATEXP : SCON
           (ConcreteSyntax.CONST SCON)
+      | LPAREN RPAREN
+          (ConcreteSyntax.TUPLE [])
+      | LPAREN TUPLE_BODY RPAREN
+          (ConcreteSyntax.TUPLE TUPLE_BODY)
       | VID
           (ConcreteSyntax.VAR VID)
       | OP VID
@@ -72,16 +76,6 @@ ATEXP : SCON
           (ConcreteSyntax.LET (DEC, EXP))
       | LPAREN EXP RPAREN
           (ConcreteSyntax.PAREN EXP)
-
-ATEXPSEQ_AUX : ATEXP COMMA ATEXP
-                 ([ATEXP1, ATEXP2])
-             | ATEXP COMMA ATEXPSEQ_AUX
-                 (ATEXP :: ATEXPSEQ_AUX)
-
-ATEXPSEQ : LPAREN RPAREN
-             ([])
-         | LPAREN ATEXPSEQ_AUX RPAREN
-             (ATEXPSEQ_AUX)
 
 VIDSEQ_AUX : VID
                ([VID])
@@ -95,22 +89,19 @@ VIDSEQ : LPAREN RPAREN
        | LPAREN VIDSEQ_AUX RPAREN
            (VIDSEQ_AUX)
 
-APPEXP : ATEXP
-           (ATEXP)
-       | APPEXP ATEXPSEQ
-           (ConcreteSyntax.APP (APPEXP, ATEXPSEQ))
-
-SEQEXP : APPEXP
-	   ([APPEXP])
-       | APPEXP SEQEXP
-           (APPEXP :: SEQEXP)
+SEQEXP : ATEXP
+           ([ATEXP])
+       | ATEXP SEQEXP
+           (ATEXP :: SEQEXP)
 
 EXP : SEQEXP
         (ConcreteSyntax.SEQ SEQEXP)
-    | FN VIDSEQ FATARROW EXP
-        (ConcreteSyntax.ABS (VIDSEQ, EXP))
+    | FN VID FATARROW EXP
+        (ConcreteSyntax.ABS ([VID], EXP))
     | IF EXP THEN EXP ELSE EXP
         (ConcreteSyntax.IF (EXP1, EXP2, EXP3))
+    | CASE EXP OF VIDSEQ FATARROW EXP
+        (ConcreteSyntax.CASE (EXP1, VIDSEQ, EXP2))
 
 ATDEC : VAL VID EQUAL EXP
           (ConcreteSyntax.VAL (VID, EXP))
@@ -127,6 +118,11 @@ DEC : ATDEC
         ([ATDEC])
     | ATDEC SEMICOLON DEC
         (ATDEC :: DEC)
+
+TUPLE_BODY : EXP COMMA EXP
+               ([EXP1, EXP2])
+           | EXP COMMA TUPLE_BODY
+               (EXP :: TUPLE_BODY)
 
 DIGIT_OPT :
               (NONE)

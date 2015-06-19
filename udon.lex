@@ -24,6 +24,7 @@ alpha=[A-Za-z];
 
 %%
 
+"case" => (CASE((),()));
 "else" => (ELSE((),()));
 "end" => (END((),()));
 "fn" => (FN((),()));
@@ -33,6 +34,7 @@ alpha=[A-Za-z];
 "infixr" => (INFIXR((),()));
 "let" => (LET((),()));
 "nonfix" => (NONFIX((),()));
+"of" => (OF((),()));
 "op" => (OP((),()));
 "rec" => (REC((),()));
 "then" => (THEN((),()));
