@@ -65,7 +65,7 @@ structure Typing : TYPING = struct
           end
       | g env (Syntax.ABS (xs, m)) =
           let
-            val xs' = List.map (fn x => (x, Type.genvar ())) xs
+            val xs' = map (fn x => (x, Type.genvar ())) xs
             val m' = g (Env.insertList (env, xs')) m
           in
             E (ABS (xs', m'), Type.FUN (idSeqTypeOf xs', expTypeOf m'))
@@ -88,6 +88,21 @@ structure Typing : TYPING = struct
           in
             unify (Prim.typeOf p, Type.FUN (expSeqTypeOf ms', t));
             E (PRIM (p, ms'), t)
+          end
+      | g env (Syntax.TUPLE ms) =
+          let
+            val ms' = map (g env) ms
+          in
+            E (TUPLE ms', Type.TUPLE (map expTypeOf ms'))
+          end
+      | g env (Syntax.CASE (m, xs, n)) =
+          let
+            val m' = g env m
+            val xs' = map (fn x => (x, Type.genvar ())) xs
+            val n' = g (Env.insertList (env, xs')) n
+          in
+            unify (expTypeOf m', Type.TUPLE (idSeqTypeOf xs'));
+            E (CASE (m', xs', n'), expTypeOf n')
           end
     and typingLet dec' env [] body =
           let 
@@ -121,7 +136,7 @@ structure Typing : TYPING = struct
            derefExp n1;
            derefExp n2)
       | derefExpBody (ABS (xs, m)) =
-          (List.app (derefType o #2) xs;
+          (List.app (derefType o idTypeOf) xs;
            derefExp m)
       | derefExpBody (APP (m, ns)) =
           (derefExp m;
@@ -131,6 +146,12 @@ structure Typing : TYPING = struct
            derefExp m)
       | derefExpBody (PRIM (_, ms)) =
           List.app derefExp ms
+      | derefExpBody (TUPLE ms) =
+          List.app derefExp ms
+      | derefExpBody (CASE (m, xs, n)) =
+          (derefExp m;
+           List.app (derefType o idTypeOf) xs;
+           derefExp n)
       | derefExpBody _ = ()
     (* replace type variable with appropriate type in body of typed declaration *)
     and derefDec (VAL ((_, t), m)) =
