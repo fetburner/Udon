@@ -42,6 +42,17 @@ structure Infixing : INFIXING = struct
       | infixing env (LET (dec, m)) = infixingLet [] env dec m
       | infixing env (SEQ ms) = infixingSeq env ms
       | infixing env (PAREN m) = infixing env m
+      | infixing env (TUPLE ms) =
+          Syntax.TUPLE (map (infixing env) ms)
+      | infixing env (CASE (m, xs, n)) =
+          let
+            val m' = infixing env m
+            val xs' = map Id.gensym xs
+            val env' = Env.insertList (env, map (fn x => (x, NONE)) xs')
+            val n' = infixing env' n
+          in
+            Syntax.CASE (m', xs', n')
+          end
 
     and infixingLet dec' env [] body =
           Syntax.LET (rev dec', infixing env body) 
