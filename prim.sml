@@ -20,4 +20,19 @@ structure Prim = struct
         Type.FUN ([Type.TUPLE [Type.INT, Type.INT]], Type.INT)
     | typeOf LE =
         Type.FUN ([Type.TUPLE [Type.INT, Type.INT]], Type.BOOL)
+
+  local
+    val primitives =
+      map (fn p => (Id.gensym (toString p), p))
+      [PLUS,
+      MINUS,
+      TIMES,
+      LE]
+  in
+    val infixInfoBindings =
+      map (fn (id, p) => (id, priority p)) primitives
+
+    val typeInfoBindings =
+      map (fn (id, p) => (id, typeOf p)) primitives
+  end
 end
