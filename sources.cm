@@ -17,6 +17,8 @@ Group is
   typing.sig
   infixing.sml
   infixing.sig
+  cps.sml
+  translCps.sml
   udon.grm
   udon.lex
   udon.sml
