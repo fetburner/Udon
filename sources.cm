@@ -15,6 +15,7 @@ Group is
   typedSyntax.sml
   typing.sml
   typing.sig
+  infixer.sml
   infixing.sml
   infixing.sig
   udon.grm
