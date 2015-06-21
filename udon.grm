@@ -118,6 +118,8 @@ DEC : ATDEC
         ([ATDEC])
     | ATDEC SEMICOLON DEC
         (ATDEC :: DEC)
+    | ATDEC DEC
+        (ATDEC :: DEC)
 
 TUPLE_BODY : EXP COMMA EXP
                ([EXP1, EXP2])
