@@ -2,6 +2,7 @@ structure TranslCps = struct
   open TypedSyntax
   exception Fail of string
 
+  (* utility functions *)                    
   fun assoc [] a = NONE
     | assoc ((key, value)::xs) a =
       if a = key then SOME value else assoc xs a
@@ -24,7 +25,8 @@ structure TranslCps = struct
   and simpCont map (c as CVAR id) = c
     | simpCont map (CABS (id, exp)) = CABS (id, simpExp map exp)
   end
-  
+
+  (* main translation function *)
   fun transl (E (exp, _)) cont = 
     case exp of
         CONST c => Cps.APP_TAIL (cont, (Cps.CONST c))
@@ -64,23 +66,19 @@ structure TranslCps = struct
       let val newId = Id.gensym "cond" in
         transl e1 (Cps.CABS (newId, (Cps.IF (Cps.VAR newId, transl e2 cont, transl e3 cont))))
       end
-  and translAbs nameopt recflag (id, _) exp cont =
-      let val fname = case nameopt of NONE => Id.gensym "fn" |  SOME id => id
+  and translAbs nameopt recflag (arg, _) exp cont =
+      let val f = case nameopt of NONE => Id.gensym "fn" |  SOME id => id
           val k = Id.gensym "k"
           val z = Id.gensym "z"
-          val pair = ((fname, Cps.ABS (k, id, transl exp (Cps.CABS (z, Cps.APP_TAIL (Cps.CVAR k, Cps.VAR z))))),
-                       Cps.APP_TAIL (cont, Cps.VAR fname))
+          val pair = ((f, Cps.ABS (k, arg, transl exp (Cps.CABS (z, Cps.APP_TAIL (Cps.CVAR k, Cps.VAR z))))),
+                       Cps.APP_TAIL (cont, Cps.VAR f))
       in
-        if recflag
-        then 
-          Cps.LET_REC pair
-        else
-          Cps.LET pair
+        if recflag then Cps.LET_REC pair else Cps.LET pair
       end
   and translTuple (exps : exp list) (cont : Cps.cont) =
       let
         fun translTuple' acc (e :: exps) (id :: ids) =
-          transl e (Cps.CABS (id, translTuple' acc exps ids))
+              transl e (Cps.CABS (id, translTuple' acc exps ids))
           | translTuple' acc [] [] = acc
           | translTuple' _ _ _ = raise (Fail "translTuple")
         val ids = List.foldl (fn (_, acc) => Id.gensym "e" :: acc) [] exps
@@ -90,14 +88,7 @@ structure TranslCps = struct
       in
         translTuple' acc exps ids
       end
-        
-  (* fun translIds ids = *)
-  (*   List.foldl (fn (exp, cps) => ) *)
-  (* fun translDec dec cont = *)
-  (*   case dec of *)
-  (*       VAL (id, exp) =>  *)
-  (*    |  CONST _ => APP_TAIL cont value *)
-                            
+
 end          
     
 
