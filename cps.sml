@@ -33,13 +33,7 @@ structure Cps = struct
   fun valueToString (CONST c) = Const.toString c
     | valueToString (VAR id) = Id.toString id
 
-  local 
-    fun vsToString' [v] = valueToString v
-      | vsToString' (v :: vs) = valueToString v ^ ", " ^ vsToString' vs 
-  in
-  fun vsToString ids =
-    "(" ^ vsToString' ids ^ ")"
-  end
+  fun vsToString seq = PP.seqToString (valueToString, "()", ", ", "(", ")") seq
   
   fun expToString (APP (v1, v2, cont)) =
     "(" ^ valueToString v1 ^ " " ^ valueToString v2 ^ " " ^ contToString cont ^ ")"
