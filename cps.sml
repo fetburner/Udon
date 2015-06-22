@@ -34,7 +34,8 @@ structure Cps = struct
     | valueToString (VAR id) = Id.toString id
 
   local 
-    fun vsToString' [v] = valueToString v
+    fun vsToString' [] = "()"
+      | vsToString' [v] = valueToString v
       | vsToString' (v :: vs) = valueToString v ^ ", " ^ vsToString' vs 
   in
   fun vsToString ids =
@@ -42,9 +43,9 @@ structure Cps = struct
   end
   
   fun expToString (APP (v1, v2, cont)) =
-    "(" ^ valueToString v1 ^ " " ^ valueToString v2 ^ " " ^ contToString cont ^ ")"
+     valueToString v1 ^ " " ^ valueToString v2 ^ " " ^ contToString cont
     | expToString (APP_TAIL (c, v)) =
-      "*(" ^ contToString c ^ " " ^ valueToString v ^ ")"
+      contToString c ^ " " ^ valueToString v
     | expToString (LET ((id, abs), exp)) =
       "LET " ^ Id.toString id ^ " = " ^ absToString abs ^ " in " ^ expToString exp
     | expToString (LET_REC ((id, abs), exp)) =

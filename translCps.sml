@@ -23,6 +23,8 @@ structure TranslCps = struct
     | simpAbs map (TUPLE vs) = TUPLE (List.map (simpValue map) vs)
     | simpAbs map (GET (v, i)) = GET (simpValue map v, i)
   and simpCont map (c as CVAR id) = c
+    | simpCont map (CABS (id, exp as APP_TAIL (cont, VAR id'))) =
+      if id = id' then cont else CABS (id, simpExp map exp)
     | simpCont map (CABS (id, exp)) = CABS (id, simpExp map exp)
   end
 
