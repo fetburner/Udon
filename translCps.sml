@@ -2,48 +2,36 @@ structure TranslCps = struct
   open TypedSyntax
   exception Fail of string
 
-(*
-  fun substitute cont newId =
-    let open Cps
-        fun subValue old new (v as VAR id) =
-          if id = old then VAR new else v
-          | subValue _ _ (c as CONST _) = c
-        and subCont old new (CVAR id) =
-            CVAR (if id = old then new else id)
-          | subCont old new (CABS (id, e)) =
-            CABS (if id = old then new else id, subExp old new e)
-        and subExp old new exp =
-          case exp of
-             APP (v1, v2, c) =>
-             APP (subValue old new v1, subValue old new v2, subCont old new c)
-           | APP_TAIL (c, v) =>
-             APP_TAIL (subCont old new c, subValue old new v)
-           | LET ((id, abs), exp) =>
-             LET ((id, subAbs old new abs), subExp old new exp)
-           | LET_REC ((id, abs), exp) =>
-             LET_REC ((id, subAbs old new abs), subExp old new exp)
-           | IF (v, e1, e2) =>
-             IF (subValue old new v, subExp old new e1, subExp old new e2)
-        and subAbs old new (ABS (id1, id2, e)) =
-            ABS (id1, id2, subExp old new e)
-          | subAbs old new (ABS_TAIL (id, e)) =
-            ABS_TAIL (id, subExp old new e)
-          | subAbs old new (TUPLE vs)  =
-            TUPLE (List.map (subValue old new) vs)
-    in 
-      case cont of
-          Cps.CVAR _ => raise (Fail "metaContApp")
-        | Cps.CABS (id, exp) => subExp id newId exp
-    end
-*)
+  fun assoc [] a = NONE
+    | assoc ((key, value)::xs) a =
+      if a = key then SOME value else assoc xs a
                       
+  local
+    open Cps
+  in
+  fun simpValue map (c as CONST _) = c
+    | simpValue map (v as VAR id) =
+      case assoc map id of NONE => v | SOME v => v
+  and simpExp map (APP (v1, v2, c)) = APP (simpValue map v1, simpValue map v2, simpCont map c)
+    | simpExp map (APP_TAIL (CABS (id, exp), v)) = simpExp ((id, v) :: map) exp
+    | simpExp map (APP_TAIL (CVAR id, v)) = APP_TAIL (CVAR id, simpValue map v)
+    | simpExp map (LET ((id, abs), exp)) = LET ((id, simpAbs map abs), simpExp map exp)
+    | simpExp map (LET_REC ((id, abs), exp)) = LET ((id, simpAbs map abs), simpExp map exp)
+    | simpExp map (IF (v, e1, e2)) = IF (simpValue map v, simpExp map e1, simpExp map e2)
+  and simpAbs map (ABS (id1, id2, exp)) = ABS (id1, id2, simpExp map exp)
+    | simpAbs map (TUPLE vs) = TUPLE (List.map (simpValue map) vs)
+    | simpAbs map (GET (v, i)) = GET (simpValue map v, i)
+  and simpCont map (c as CVAR id) = c
+    | simpCont map (CABS (id, exp)) = CABS (id, simpExp map exp)
+  end
+  
   fun transl (E (exp, _)) cont = 
     case exp of
         CONST c => Cps.APP_TAIL (cont, (Cps.CONST c))
       | VAR id => Cps.APP_TAIL (cont, (Cps.VAR id))
       | TUPLE exps => translTuple exps cont
       | IF (e1, e2, e3) => translIf e1 e2 e3 cont
-      | ABS (id, exp) => translAbs id exp cont
+      | ABS (id, exp) => translAbs NONE false id exp cont
       | APP (e1, e2) => translApp e1 e2 cont
       | LET (decs, exp) => translLet decs exp cont
       | CASE (e1, ids, e2) => translCase e1 ids e2 cont
@@ -59,10 +47,15 @@ structure TranslCps = struct
   and translLet [] exp cont = transl exp cont
     | translLet (dec::decs) exp cont =
       case dec of
-        VAL (f, exp) =>
-        transl exp (Cps.CABS (#1 f, translLet decs exp cont))
-      | VALREC (f, arg, exp) => (* XXX : introduce dummy type here *)
-        transl (E (ABS (arg, exp), Type.INT)) (Cps.CABS (#1 f, translLet decs exp cont))
+        VAL (f, E (ABS (arg, exp'), _)) =>
+        let val arg' = Id.gensym "arg" in
+          translAbs (SOME (#1 f)) false arg exp' (Cps.CABS (arg', translLet decs exp cont))
+        end
+      | VAL (f, exp') => transl exp' (Cps.CABS (#1 f, translLet decs exp cont))
+      | VALREC (f, arg, exp') =>
+        let val arg' = Id.gensym "arg" in
+          translAbs (SOME (#1 f)) true arg exp' (Cps.CABS (arg', translLet decs exp cont))
+        end
   and translApp e1 e2 cont =
       let val (arg1, arg2) = (Id.gensym "f", Id.gensym "arg") in
         transl e1 (Cps.CABS (arg1, transl e2 (Cps.CABS (arg2, Cps.APP (Cps.VAR arg1, Cps.VAR arg2, cont)))))
@@ -71,13 +64,18 @@ structure TranslCps = struct
       let val newId = Id.gensym "cond" in
         transl e1 (Cps.CABS (newId, (Cps.IF (Cps.VAR newId, transl e2 cont, transl e3 cont))))
       end
-  and translAbs id exp cont =
-      let val (fname, arg, k) = (Id.gensym "fun", Id.gensym "arg", Id.gensym "k")
+  and translAbs nameopt recflag (id, _) exp cont =
+      let val fname = case nameopt of NONE => Id.gensym "fn" |  SOME id => id
+          val k = Id.gensym "k"
           val z = Id.gensym "z"
+          val pair = ((fname, Cps.ABS (k, id, transl exp (Cps.CABS (z, Cps.APP_TAIL (Cps.CVAR k, Cps.VAR z))))),
+                       Cps.APP_TAIL (cont, Cps.VAR fname))
       in
-        Cps.LET_REC ((fname, Cps.ABS (k, arg, transl exp (Cps.CABS (z, Cps.APP_TAIL (Cps.CVAR k, Cps.VAR z))))),
-                     Cps.APP_TAIL (cont, Cps.VAR fname)
-                    )
+        if recflag
+        then 
+          Cps.LET_REC pair
+        else
+          Cps.LET pair
       end
   and translTuple (exps : exp list) (cont : Cps.cont) =
       let

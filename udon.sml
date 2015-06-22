@@ -16,7 +16,8 @@ val primitives =
 fun exec exp stat =
   ((print
     o Cps.expToString
-    o (fn exp => TranslCps.transl exp Cps.HALT)
+    o TranslCps.simpExp []
+    o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
     o Typing.f
         (Env.fromList (map (fn (id, p) =>

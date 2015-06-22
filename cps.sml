@@ -18,8 +18,8 @@ structure Cps = struct
   and abs = (* XXX : should change the name *)
     (* fn k x => v *)
       ABS of Id.t * Id.t * exp
-    (* fn x => v *)
-    | ABS_TAIL of Id.t * exp
+    (* (* fn x => v *) *)
+    (* | ABS_TAIL of Id.t * exp *)
     (* (v, v, v, ...) *)
     | TUPLE of value list
     (* #n v *)                     
@@ -29,7 +29,6 @@ structure Cps = struct
       CVAR of Id.t
       (* fn x => e *)
     | CABS of Id.t * exp
-    | HALT
 
   fun valueToString (CONST c) = Const.toString c
     | valueToString (VAR id) = Id.toString id
@@ -54,12 +53,11 @@ structure Cps = struct
       ("IF " ^ valueToString v ^ " then " ^ expToString e1 ^ " else " ^ expToString e2)
   and absToString (ABS (id1, id2, exp)) =
       "(ABS (" ^ Id.toString id1 ^ ", " ^ Id.toString id2 ^ ") => " ^ expToString exp ^ ")"
-    | absToString (ABS_TAIL (id, exp)) =
-      "(ABS* " ^ Id.toString id ^ " => " ^ expToString exp ^ ")"
+    (* | absToString (ABS_TAIL (id, exp)) = *)
+    (*   "(ABS* " ^ Id.toString id ^ " => " ^ expToString exp ^ ")" *)
     | absToString (TUPLE vs) = vsToString vs
     | absToString (GET (v, i)) = "#" ^ Int.toString i ^ " " ^ valueToString v
   and contToString (CVAR id) = "*" ^ Id.toString id
     | contToString (CABS (id, exp)) = "(CABS " ^ Id.toString id ^ " => " ^ expToString exp ^ ")"
-    | contToString HALT = "HALT"
 
 end
