@@ -37,16 +37,17 @@ structure Typing : TYPING = struct
       | unify (t1, t2) = raise (Unify (t1, t2))
 
     (* replace type variable with appropriate type (int) in type *)
-    fun derefType (VAR (t as (ref NONE))) = t := SOME INT
+    fun derefType (VAR (t as (ref NONE))) = (t := SOME INT; INT)
       | derefType (VAR (ref (SOME t))) = derefType t
-      | derefType (FUN (t1s, t2)) =
-          (List.app derefType t1s;
-           derefType t2)
-      | derefType _ = ()
+      | derefType (t as INT) = t
+      | derefType (t as BOOL) = t
+      | derefType (FUN (t1s, t2)) = FUN (map derefType t1s, derefType t2)
+      | derefType (TUPLE ms) = TUPLE (map derefType ms)
   end
 
   (* exception that arises when unbound variable occur *)
   exception UnboundVar of Id.t
+
   local
     open TypedSyntax
   in
@@ -126,42 +127,31 @@ structure Typing : TYPING = struct
           end
 
     (* replace type variable with appropriate type in typed expression *)
-    fun derefExp (E (m, t)) = (derefType t; derefExpBody m)
+    fun derefExp (E (m, t)) = E (derefExpBody m, derefType t)
     (* replace type variable with appropriate type in body of typed expression *)
-    and derefExpBody (IF (m, n1, n2)) =
-          (derefExp m;
-           derefExp n1;
-           derefExp n2)
+    and derefExpBody (m as (CONST _)) = m
+      | derefExpBody (m as (VAR _)) = m
+      | derefExpBody (IF (m, n1, n2)) =
+          IF (derefExp m, derefExp n1, derefExp n2)
       | derefExpBody (ABS (x, m)) =
-          (derefType (idTypeOf x);
-           derefExp m)
+          ABS (derefId x, derefExp m)
       | derefExpBody (APP (m, n)) =
-          (derefExp m;
-           derefExp n)
+          APP (derefExp m, derefExp n)
       | derefExpBody (LET (dec, m)) =
-          (List.app derefDec dec;
-           derefExp m)
+          LET (map derefDec dec, derefExp m)
       | derefExpBody (TUPLE ms) =
-          List.app derefExp ms
+          TUPLE (map derefExp ms)
       | derefExpBody (CASE (m, xs, n)) =
-          (derefExp m;
-           List.app (derefType o idTypeOf) xs;
-           derefExp n)
-      | derefExpBody _ = ()
+          CASE (derefExp m, map derefId xs, derefExp n)
     (* replace type variable with appropriate type in body of typed declaration *)
-    and derefDec (VAL ((_, t), m)) =
-          (derefType t;
-           derefExp m)
-      | derefDec (VALREC ((_, t1), x, m)) =
-          (derefType t1;
-           derefType (idTypeOf x);
-           derefExp m)
+    and derefDec (VAL (x, m)) =
+          VAL (derefId x, derefExp m)
+      | derefDec (VALREC (f, x, m)) =
+          VALREC (derefId f, derefId x, derefExp m)
+    (* replace type variable with appropriate type in body of typed identifier *)
+    and derefId (x, t) = (x, derefType t)
 
     (* typing expression and remove type variable *)
-    fun typing env m =
-      let val m' = typingExp env m in
-        derefExp m';
-        m'
-      end
+    fun typing env m = derefExp (typingExp env m)
   end
 end
