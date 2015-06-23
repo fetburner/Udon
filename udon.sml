@@ -10,7 +10,7 @@ structure UdonParser = Join(structure LrParser = LrParser
 fun exec exp stat =
   ((print
     o TypedSyntax.expToString
-    o Typing.f (Env.fromList Prim.typeInfoBindings)
+    o Typing.typing (Env.fromList Prim.typeInfoBindings)
     o Infixing.infixing (Env.fromList Prim.infixInfoBindings)) exp
    handle
      Infixing.SyntaxError =>
