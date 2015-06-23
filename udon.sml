@@ -10,12 +10,12 @@ structure UdonParser = Join(structure LrParser = LrParser
 fun exec exp stat =
   ((print
     o TypedSyntax.expToString
-    o Typing.typing (Env.fromList Prim.typeInfoBindings)
+    o Typing.typing 0 (Env.fromList Prim.typeInfoBindings)
     o Infixing.infixing (Env.fromList Prim.infixInfoBindings)) exp
    handle
      Infixing.SyntaxError =>
        print "Syntax error"
-   | Typing.Unify (t1, t2) =>
+   | Type.Unify (t1, t2) =>
        print
          ("Error : failed to unify "
            ^ Type.toString t1
