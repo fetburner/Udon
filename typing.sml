@@ -11,7 +11,9 @@ structure Typing : TYPING = struct
       | occur r1 (VAR (r2 as (ref NONE))) = r1 = r2
       | occur r1 (VAR (r2 as (ref (SOME t2)))) =
           r1 = r2 orelse occur r1 t2
-      | occur _ _ = false
+      | occur r1 (TUPLE ts) = List.exists (occur r1) ts
+      | occur r1 INT = false
+      | occur r1 BOOL = false
 
     (* unifier *)
     fun unify (INT, INT) = ()
