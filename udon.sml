@@ -9,7 +9,10 @@ structure UdonParser = Join(structure LrParser = LrParser
 
 fun exec exp stat =
   ((print
-    o TypedSyntax.expToString
+    o Cps.expToString
+    o TranslCps.simpExp []
+    o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
+    o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
     o Typing.typing 0 (Env.fromList Prim.typeInfoBindings)
     o Infixing.infixing (Env.fromList Prim.infixInfoBindings)) exp
    handle
