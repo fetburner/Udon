@@ -50,64 +50,64 @@ structure Typing : TYPING = struct
     open TypedSyntax
   in
     (* perform type inference *)
-    fun g env (Syntax.CONST c) =
+    fun typingExp env (Syntax.CONST c) =
           E (CONST c, Const.typeOf c)
-      | g env (Syntax.VAR x) =
+      | typingExp env (Syntax.VAR x) =
           (case Env.find (env, x) of
              NONE => raise (UnboundVar x)
            | SOME t => E (VAR x, t))
-      | g env (Syntax.IF (m, n1, n2)) =
+      | typingExp env (Syntax.IF (m, n1, n2)) =
           let
-            val m' = g env m
-            val n1' = g env n1
-            val n2' = g env n2
+            val m' = typingExp env m
+            val n1' = typingExp env n1
+            val n2' = typingExp env n2
           in
             unify (expTypeOf m', Type.BOOL);
             unify (expTypeOf n1', expTypeOf n2');
             E (IF (m', n1', n2'), expTypeOf n1')
           end
-      | g env (Syntax.ABS (x, m)) =
+      | typingExp env (Syntax.ABS (x, m)) =
           let
             val x' = (x, Type.genvar ())
-            val m' = g (Env.insertList (env, [x'])) m
+            val m' = typingExp (Env.insertList (env, [x'])) m
           in
             E (ABS (x', m'), Type.FUN ([idTypeOf x'], expTypeOf m'))
           end
-      | g env (Syntax.APP (m, n)) =
+      | typingExp env (Syntax.APP (m, n)) =
           let
-            val m' = g env m
-            val n' = g env n
+            val m' = typingExp env m
+            val n' = typingExp env n
             val t12 = Type.genvar ()
           in
             unify (expTypeOf m', Type.FUN ([expTypeOf n'], t12));
             E (APP (m', n'), t12)
           end
-      | g env (Syntax.LET (dec, m)) =
+      | typingExp env (Syntax.LET (dec, m)) =
           typingLet [] env dec m
-      | g env (Syntax.TUPLE ms) =
+      | typingExp env (Syntax.TUPLE ms) =
           let
-            val ms' = map (g env) ms
+            val ms' = map (typingExp env) ms
           in
             E (TUPLE ms', Type.TUPLE (map expTypeOf ms'))
           end
-      | g env (Syntax.CASE (m, xs, n)) =
+      | typingExp env (Syntax.CASE (m, xs, n)) =
           let
-            val m' = g env m
+            val m' = typingExp env m
             val xs' = map (fn x => (x, Type.genvar ())) xs
-            val n' = g (Env.insertList (env, xs')) n
+            val n' = typingExp (Env.insertList (env, xs')) n
           in
             unify (expTypeOf m', Type.TUPLE (idSeqTypeOf xs'));
             E (CASE (m', xs', n'), expTypeOf n')
           end
     and typingLet dec' env [] body =
           let 
-            val body' = g env body
+            val body' = typingExp env body
           in
             E (LET (rev dec', body'), expTypeOf body')
           end
       | typingLet dec' env (Syntax.VAL (x, m) :: dec) body =
           let
-            val m' = g env m
+            val m' = typingExp env m
             val env' = Env.insert (env, x, expTypeOf m')
           in
             typingLet (VAL ((x, expTypeOf m'), m') :: dec') env' dec body
@@ -117,7 +117,7 @@ structure Typing : TYPING = struct
             val t1 = Type.genvar ()
             val f' = (f, Type.genvar ())
             val x' = (x, Type.genvar ())
-            val m' = g (Env.insertList (env, [f', x'])) m
+            val m' = typingExp (Env.insertList (env, [f', x'])) m
             val env' = Env.insertList (env, [f'])
           in
             unify (t1, Type.FUN ([idTypeOf x'], expTypeOf m'));
@@ -150,6 +150,6 @@ structure Typing : TYPING = struct
     and derefId (x, t) = (x, derefType t)
 
     (* typing expression and remove type variable *)
-    fun f env m = derefExp (g env m)
+    fun typing env m = derefExp (typingExp env m)
   end
 end
