@@ -9,8 +9,8 @@ structure TypedSyntax = struct
   (* return types of typed value identifiers *)
   val idSeqTypeOf = map idTypeOf
 
-  (* e : T *)
-  datatype exp = E of exp_body * Type.t
+  (* Gamma |- e : T *)
+  datatype exp = E of Type.t Env.t * exp_body * Type.t
   and exp_body =
     (* constant *)
       CONST of Const.t
@@ -18,10 +18,10 @@ structure TypedSyntax = struct
     | VAR of Id.t
     (* if M then N_1 else N_2 *)
     | IF of exp * exp * exp
-    (* fn x : T => M *)
-    | ABS of id  * exp
-    (* M N *)
-    | APP of exp * exp
+    (* fn (x_1 : T_1, ... , x_n : T_n) => M *)
+    | ABS of id list * exp
+    (* M (N_1, ... , N_n) *)
+    | APP of exp * exp list
     (* let d in N end *)
     | LET of dec list * exp
     (* (M_1, ... , M_n) *)
@@ -34,7 +34,7 @@ structure TypedSyntax = struct
     (* val rec f : T_1 = fn x : T_2 => M *)
     | VALREC of id * id * exp
 
-  fun expToString (E (e, t)) =
+  fun expToString (E (_, e, t)) =
     "(" ^ expBodyToString e ^ " : " ^ Type.toString t ^ ")"
   and expBodyToString (CONST c) = Const.toString c
     | expBodyToString (VAR x) = Id.toString x
@@ -46,17 +46,17 @@ structure TypedSyntax = struct
         ^ " else "
         ^ expToString n2
         ^ ")"
-    | expBodyToString (ABS (x, m)) =
+    | expBodyToString (ABS (xs, m)) =
         "(fn "
-        ^ idToString x
+        ^ idSeqToString xs
         ^ " => " 
         ^ expToString m
         ^ ")"
-    | expBodyToString (APP (m, n)) =
+    | expBodyToString (APP (m, ns)) =
         "("
         ^ expToString m
         ^ " "
-        ^ expToString n
+        ^ expSeqToString ns
         ^ ")"
     | expBodyToString (LET (d, m)) =
         "let "
@@ -90,7 +90,7 @@ structure TypedSyntax = struct
       ^ expToString m, "", "; ", "", "") dec
 
   (* return type of typed expression *)
-  fun expTypeOf (E (_, t)) = t
+  fun expTypeOf (E (_, _, t)) = t
   (* return types of typed expressions *)
   val expSeqTypeOf = map expTypeOf
 end
