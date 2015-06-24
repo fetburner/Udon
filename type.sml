@@ -65,7 +65,7 @@ structure Type = struct
     (* occur check *)
     fun occur r1 (FUN (t21s, t22)) =
           List.exists (occur r1) t21s orelse occur r1 t22
-      | occur r1 (VAR (r2 as (ref (UNBOUND (_, l))))) = r1 = r2
+      | occur r1 (VAR (r2 as (ref (UNBOUND _)))) = r1 = r2
       | occur r1 (VAR (r2 as (ref (LINK t2)))) =
           r1 = r2 orelse occur r1 t2
       | occur r1 (META _) = false
@@ -84,12 +84,11 @@ structure Type = struct
       | unify (VAR (ref (LINK t1)), t2) = unify (t1, t2)
       | unify (t1, VAR (ref (LINK t2))) = unify (t1, t2)
       | unify (t1 as (VAR (r1 as (ref (UNBOUND (_, l1))))),
-               t2 as (VAR (r2 as (ref (UNBOUND (x2, l2)))))) =
+               t2 as (VAR (r2 as (ref (UNBOUND (_, l2)))))) =
           if r1 = r2 then ()
           else if occur r1 t2 then raise (Unify (t1, t2))
-          else
-            (r2 := UNBOUND (x2, Int.min (l1, l2));
-             r1 := LINK t2)
+          else if l1 < l2 then r2 := LINK t1
+          else r1 := LINK t2
       | unify (t1 as (VAR (r1 as (ref (UNBOUND _)))), t2) =
           if occur r1 t2 then raise (Unify (t1, t2))
           else r1 := LINK t2

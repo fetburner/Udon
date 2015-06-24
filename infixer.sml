@@ -7,12 +7,11 @@ structure Infixer = struct
     fun parseExp
       {getToken = getToken,
        reduceApp = reduceApp,
-       reduceBinOp = reduceBinOp,
-       syntaxError = syntaxError} =
+       reduceBinOp = reduceBinOp} =
       let
         fun parseFactor seq =
           case getToken seq of
-               SOME (EXP_TOKEN e, seq') => SOME (e, seq')
+               SOME (EXP_TOKEN e, seq) => SOME (e, seq)
              | SOME (BINOP_TOKEN _, _) => NONE
              | NONE => NONE
 
@@ -31,19 +30,20 @@ structure Infixer = struct
                SOME (e2, seq') => 
                  (case getToken seq' of
                        SOME (BINOP_TOKEN (op2, prio2, assoc2), seq'') => 
-                         if prio1 = prio2 andalso assoc1 <> assoc2 then
-                           syntaxError ()
-                         else if prio1 < prio2 orelse prio1 = prio2 andalso assoc1 = RIGHT_ASSOC then
-                           Option.map (fn (e, seq0) =>
-                             (reduceBinOp (e1, op1, e), seq0))
-                               (parseExp' e2 (op2, prio2, assoc2) seq'')
+                         if prio1 = prio2 andalso assoc1 <> assoc2 then NONE
+                         else if prio1 < prio2 
+                                 orelse prio1 = prio2
+                                   andalso assoc1 = RIGHT_ASSOC then
+                           case parseExp' e2 (op2, prio2, assoc2) seq'' of
+                                SOME (e, seq''') =>
+                                  SOME (reduceBinOp (e1, op1, e), seq''')
+                              | NONE => NONE
                          else
                            parseExp' (reduceBinOp (e1, op1, e2))
                              (op2, prio2, assoc2) seq''
                      | SOME (EXP_TOKEN _, _) => NONE
                      | NONE => SOME (reduceBinOp (e1, op1, e2), seq'))
              | NONE => NONE
-
         fun parseExp seq =
           case parseTerm seq of
                SOME (e, seq') => 

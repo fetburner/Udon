@@ -9,7 +9,7 @@ structure Typing : TYPING = struct
           E (CONST c, Const.typeOf c)
       | typingExp l env (Syntax.VAR x) =
           (case Env.find (env, x) of
-             NONE => raise (UnboundVar x)
+                NONE => raise (UnboundVar x)
               | SOME t => E (VAR x, Type.inst l t))
       | typingExp l env (Syntax.IF (m, n1, n2)) =
           let
@@ -63,21 +63,24 @@ structure Typing : TYPING = struct
       | typingLet l dec' env (Syntax.VAL (x, m) :: dec) body =
           let
             val m' = typingExp (l + 1) env m
-            val t = Type.generalize l (expTypeOf m')
-            val env' = Env.insert (env, x, t)
+            val x' = (x, Type.generalize l (expTypeOf m'))
+            val env' = Env.insertList (env, [x'])
           in
-            typingLet l (VAL ((x, t), m') :: dec') env' dec body
+            typingLet l (VAL (x', m') :: dec') env' dec body
           end
       | typingLet l dec' env (Syntax.VALREC (f, x, m) :: dec) body =
           let
             val f' = (f, Type.genvar (l + 1))
             val x' = (x, Type.genvar (l + 1))
             val m' = typingExp (l + 1) (Env.insertList (env, [f', x'])) m
-            val () = Type.unify (idTypeOf f', Type.FUN ([idTypeOf x'], expTypeOf m'))
-            val f' = (f, Type.generalize l (idTypeOf f'))
-            val env' = Env.insertList (env, [f'])
           in
-            typingLet l (VALREC (f', x', m') :: dec') env' dec body
+            Type.unify (idTypeOf f', Type.FUN ([idTypeOf x'], expTypeOf m'));
+            let
+              val f' = (f, Type.generalize l (idTypeOf f'))
+              val env' = Env.insertList (env, [f'])
+            in
+              typingLet l (VALREC (f', x', m') :: dec') env' dec body
+            end
           end
 
     (* typing expression *)

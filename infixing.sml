@@ -27,27 +27,22 @@ structure Infixing : INFIXING = struct
       | infixing env (ABS (x, m)) =
           let
             val x' = Id.gensym x
-            val env' = Env.insert (env, x', NONE)
-            val m' = infixing env' m
+            val m' = infixing (Env.insert (env, x', NONE)) m
           in
             Syntax.ABS (x', m')
           end
       | infixing env (LET (dec, m)) = infixingLet [] env dec m
       | infixing env (SEQ ms) =
           let
-            fun infixingSeq env ms =
-              (case parseExp env ms of
-                    SOME (e, _) => e
-                  | NONE => raise SyntaxError)
-
             fun getToken (VAR x :: seq') =
-                (case Env.findName (env, x) of
-                      SOME (x', SOME (prio, assoc)) =>
-                        SOME (BINOP_TOKEN (x', prio, assoc), seq')
-                    | SOME (x', NONE) =>
-                        SOME (EXP_TOKEN (Syntax.VAR x'), seq')
-                    | NONE => raise (UnboundVar x))
-              | getToken (m :: seq') = SOME (EXP_TOKEN (infixing env m), seq')
+                  (case Env.findName (env, x) of
+                        SOME (x', SOME (prio, assoc)) =>
+                          SOME (BINOP_TOKEN (x', prio, assoc), seq')
+                      | SOME (x', NONE) =>
+                          SOME (EXP_TOKEN (Syntax.VAR x'), seq')
+                      | NONE => raise (UnboundVar x))
+              | getToken (m :: seq') =
+                  SOME (EXP_TOKEN (infixing env m), seq')
               | getToken [] = NONE
 
             fun reduceBinOp (e1, op1, e2) =
@@ -56,8 +51,7 @@ structure Infixing : INFIXING = struct
             case parseExp
                    {getToken = getToken,
                     reduceApp = Syntax.APP,
-                    reduceBinOp = reduceBinOp,
-                    syntaxError = fn () => raise SyntaxError}
+                    reduceBinOp = reduceBinOp}
                    ms of
                  SOME (e, _) => e
                | NONE => raise SyntaxError
