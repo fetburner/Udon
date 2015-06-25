@@ -31,8 +31,8 @@ structure TypedSyntax = struct
   and dec =
     (* val x : T = M *)
       VAL of id * exp
-    (* val rec f : T_1 = fn x : T_2 => M *)
-    | VALREC of id * id * exp
+    (* val rec f : T = M *)
+    | VALREC of id * exp
 
   fun expToString (E (_, e, t)) =
     "(" ^ expBodyToString e ^ " : " ^ Type.toString t ^ ")"
@@ -81,12 +81,10 @@ structure TypedSyntax = struct
       ^ idToString x
       ^ " = "
       ^ expToString m
-    | VALREC (f, x, m) =>
+    | VALREC (f, m) =>
       "val rec "
       ^ idToString f
-      ^ " = fn "
-      ^ idToString x
-      ^ " => "
+      ^ " = "
       ^ expToString m, "", "; ", "", "") dec
 
   (* return type of typed expression *)

@@ -68,18 +68,17 @@ structure Typing : TYPING = struct
           in
             typingLet l (VAL (x', m') :: dec') env0 env' dec body
           end
-      | typingLet l dec' env0 env (Syntax.VALREC (f, x, m) :: dec) body =
+      | typingLet l dec' env0 env (Syntax.VALREC (f, m) :: dec) body =
           let
             val f' = (f, Type.genvar (l + 1))
-            val x' = (x, Type.genvar (l + 1))
-            val m' = typingExp (l + 1) (Env.insertList (env, [f', x'])) m
+            val m' = typingExp (l + 1) (Env.insertList (env, [f'])) m
           in
-            Type.unify (idTypeOf f', Type.FUN ([idTypeOf x'], expTypeOf m'));
+            Type.unify (idTypeOf f', expTypeOf m');
             let
               val f' = (f, Type.generalize l (idTypeOf f'))
               val env' = Env.insertList (env, [f'])
             in
-              typingLet l (VALREC (f', x', m') :: dec') env0 env' dec body
+              typingLet l (VALREC (f', m') :: dec') env0 env' dec body
             end
           end
 
