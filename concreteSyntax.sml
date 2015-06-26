@@ -25,8 +25,8 @@ structure ConcreteSyntax = struct
   and dec =
     (* val x = M *)
       VAL of string * exp
-    (* val rec f = fn x => M *)
-    | VALREC of string * string * exp
+    (* val rec f = M *)
+    | VALREC of string * exp
     (* infix d vid_1 ... vid_n *)
     (* infixr d vid_1 ... vid_n *)
     | INFIX of Assoc.assoc * int * string list
@@ -84,12 +84,10 @@ structure ConcreteSyntax = struct
       ^ x
       ^ " = "
       ^ expToString m
-    | VALREC (f, x, m) =>
+    | VALREC (f, m) =>
       "val rec "
       ^ f
-      ^ " = fn "
-      ^ x
-      ^ " => "
+      ^ " = "
       ^ expToString m
     | INFIX (Assoc.LEFT_ASSOC, d, vids) =>
         "infixl "

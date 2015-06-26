@@ -22,8 +22,8 @@ structure Syntax = struct
   and dec =
     (* val x = M *)
       VAL of Id.t * exp
-    (* val rec f = fn x => M *)
-    | VALREC of Id.t * Id.t * exp
+    (* val rec f = M *)
+    | VALREC of Id.t * exp
 
   (* pretty-printer *)
   (* as you can see, this implementation is conservative *)
@@ -72,11 +72,9 @@ structure Syntax = struct
       ^ Id.toString x
       ^ " = "
       ^ expToString m
-    | VALREC (f, x, m) =>
+    | VALREC (f, m) =>
       "val rec "
       ^ Id.toString f
-      ^ " = fn "
-      ^ Id.toString x
-      ^ " => "
+      ^ " = "
       ^ expToString m, "", "; ", "", "") dec
 end
