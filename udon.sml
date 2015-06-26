@@ -13,6 +13,7 @@ fun exec exp stat =
     o TranslCps.simpExp []
     o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
+    o Uncurrying.uncurrying
     o Typing.typing 0 (Env.fromList Prim.typeInfoBindings)
     o Infixing.infixing (Env.fromList Prim.infixInfoBindings)) exp
    handle
