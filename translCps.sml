@@ -35,10 +35,20 @@ structure TranslCps = struct
       | VAR id => Cps.APP_TAIL (cont, (Cps.VAR id))
       | TUPLE exps => translTuple exps cont
       | IF (e1, e2, e3) => translIf e1 e2 e3 cont
-      | ABS (id, exp') => translAbs NONE false exp cont
+      | ABS (ids, body) => translAbs NONE false (List.map #1 ids) body cont
       | APP (func, args) => translApp func args cont
       | LET (decs, exp') => translLet decs exp' cont
       | CASE (e1, ids, e2) => translCase e1 ids e2 cont
+  and translAbs nameopt recflag ids body cont =
+      let
+        val f = case nameopt of NONE => Id.gensym "fn" |  SOME id => id
+        val k = Id.gensym "k"
+        val pair = ((f, Cps.ABS (k, ids, transl body (Cps.CVAR k))),
+                    Cps.APP_TAIL (cont, Cps.VAR f))
+      in
+        if recflag then Cps.LET_REC pair else Cps.LET pair
+      end
+
   and translCase e1 ids e2 cont =
       let fun loop v exp cont n [] = transl exp cont
             | loop v exp cont n (id::ids) =
@@ -51,18 +61,22 @@ structure TranslCps = struct
   and translLet [] exp cont = transl exp cont
     | translLet (dec::decs) exp cont =
       case dec of
-        VAL (f, E (exp' as _, ABS _, _)) =>
-        let val arg' = Id.gensym "arg" in
-          translAbs (SOME (#1 f)) false exp' (Cps.CABS (arg', translLet decs exp cont))
-        end
-      | VAL (f, exp') => transl exp' (Cps.CABS (#1 f, translLet decs exp cont))
-      | VALREC (f, arg, exp') =>
-        let
-          val arg' = Id.gensym "arg"
-          val body = ABS (arg, exp')
+        VAL (f, E (_, ABS (ids, body), _)) =>
+        let val arg' = Id.gensym "arg"
+            val ids = List.map #1 ids
         in
-          translAbs (SOME (#1 f)) true body (Cps.CABS (arg', translLet decs exp cont))
+          translAbs (SOME (#1 f)) false ids body
+                    (Cps.CABS (arg', translLet decs exp cont))
         end
+       | VAL (f, exp') => transl exp' (Cps.CABS (#1 f, translLet decs exp cont))
+       | VALREC (f, E (_, ABS (ids, body), _)) =>
+         let val arg' = Id.gensym "arg"
+             val ids = List.map #1 ids
+         in
+           translAbs (SOME (#1 f)) true ids body
+                     (Cps.CABS (arg', translLet decs exp cont))
+         end
+       | VALREC _ => raise (Fail "translLet: VALREC")
   and translApp (funcExp: exp) (argsExp: exp list) (cont: Cps.cont) =
       let
         val funcId = (Id.gensym "fn")
@@ -81,15 +95,6 @@ structure TranslCps = struct
   and translIf e1 e2 e3 cont =
       let val newId = Id.gensym "cond" in
         transl e1 (Cps.CABS (newId, (Cps.IF (Cps.VAR newId, transl e2 cont, transl e3 cont))))
-      end
-  and translAbs nameopt recflag exp cont =
-      let
-        val f = case nameopt of NONE => Id.gensym "fn" |  SOME id => id
-        val k = Id.gensym "k"
-        val pair = ((f, Cps.ABS (k, ids, transl exp (Cps.CVAR k))),
-                    Cps.APP_TAIL (cont, Cps.VAR f))
-      in
-        if recflag then Cps.LET_REC pair else Cps.LET pair
       end
   and translTuple (exps : exp list) (cont : Cps.cont) =
       let

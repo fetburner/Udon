@@ -9,6 +9,9 @@ structure UdonParser = Join(structure LrParser = LrParser
 
 fun exec exp stat =
   ((print
+    (* o Js.progToString *)
+    (* o Js.transl *)
+    (* o (fn e => (print (Cps.expToString e); print "\n\n"; e)) *)
     o Cps.expToString
     o TranslCps.simpExp []
     o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))

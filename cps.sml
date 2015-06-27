@@ -5,7 +5,7 @@ structure Cps = struct
     (* x *)
     | VAR of Id.t
   and exp =
-    (* v v* k *)
+    (* v k v* *)
       APP of value * value list * cont
     (* k v *)
     | APP_TAIL of cont * value
