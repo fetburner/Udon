@@ -1,29 +1,35 @@
 structure Cps = struct
+  (* v *)
   datatype value =
     (* c *)
       CONST of Const.t
     (* x *)
     | VAR of Id.t
+  (* t *)
+  and term
+    (* v *)
+      VAL of value
+    (* fn (x_1, ... x_n) k => e *)
+    | ABS of Id.t list * Id.t * exp
+    (* (v_1, ... , v_n) *)
+    | TUPLE of value list
+    (* #n x *)
+    | TUPLE_GET of int * Id.t
+    (* ( + ) (v_1, ... , v_n) *)
+    | PRIM of Prim.t * value list
+  (* e *)
   and exp =
-    (* v k v* *)
-      APP of value * value list * cont
+    (* x (v_1, ... , v_n) C *)
+      APP of Id.t * value list * cont
     (* k v *)
-    | APP_TAIL of cont * value
-    (* let val f = abs in e end *)
-    | LET of (Id.t * abs) * exp
-    (* let val rec f = abs in e end *)
-    | LET_REC of (Id.t * abs) * exp
+    | APP_TAIL of Id.t * value
+    (* let val x = t in e end *)
+    | LET of (Id.t * term) * exp
+    (* let val rec f = t in e end *)
+    | LET_REC of (Id.t * term) * exp
     (* if v then e1 else e2 *)
     | IF of value * exp * exp
-  and abs = (* XXX : should change the name *)
-    (* fn k x => v *)
-      ABS of Id.t * Id.t list * exp
-    (* (* fn x => v *) *)
-    (* | ABS_TAIL of Id.t * exp *)
-    (* (v, v, v, ...) *)
-    | TUPLE of value list
-    (* #n v *)
-    | GET of value * int (* value, but tuple only *)
+  (* C *)
   and cont =
       (* k *)
       CVAR of Id.t
