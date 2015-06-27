@@ -55,7 +55,7 @@ structure Js = struct
     case prog of
         VARDECL (id, exp, prog) => "var " ^ Id.toString id ^ " = " ^ expToString exp ^ ";\n" ^ progToString prog
       | IF (exp, p1, p2) =>
-        "if (" ^ expToString exp ^ ")\n" ^ "{ " ^ progToString p1 ^ " }\n"  ^ "else { " ^ progToString p2 ^ " };"
+        "if (" ^ expToString exp ^ ")\n" ^ "\n{ " ^ progToString p1 ^ "\n }\n"  ^ "else { " ^ progToString p2 ^ "\n};"
       | RET exp => "return (" ^ expToString exp ^ ");"
       | HALT => "console.log(result_0);"
   and expToString (INT i) = Int.toString i
@@ -69,7 +69,7 @@ structure Js = struct
         | _ => Id.toString id)
     | expToString (LIST exps) = PP.seqToString (expToString, "", ", ", "[", "]") exps
     | expToString (ABS (ids, prog)) =
-      "(function (" ^ PP.seqToString (Id.toString, "", ", ", "", "") ids ^ ") { " ^ progToString prog ^ " })"
+      "(function (" ^ PP.seqToString (Id.toString, "", ", ", "", "") ids ^ ") {\n" ^ progToString prog ^ "\n})"
     | expToString (APP (func, args)) =
       expToString func ^ " (" ^ PP.seqToString (expToString, "", ", ", "", "") args ^ ")"
     | expToString (GET (e, ind)) = expToString e ^ "[" ^ Int.toString ind ^ "]"
