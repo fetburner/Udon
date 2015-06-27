@@ -105,8 +105,8 @@ EXP : SEQEXP
 
 ATDEC : VAL VID EQUAL EXP
           (ConcreteSyntax.VAL (VID, EXP))
-      | VAL REC VID EQUAL FN VID FATARROW EXP
-          (ConcreteSyntax.VALREC (VID1, VID2, EXP))
+      | VAL REC VID EQUAL EXP
+          (ConcreteSyntax.VALREC (VID, EXP))
       | INFIX DIGIT_OPT NVID
           (ConcreteSyntax.INFIX (Assoc.LEFT_ASSOC, getOpt (DIGIT_OPT, 0), NVID))
       | INFIXR DIGIT_OPT NVID

@@ -79,14 +79,13 @@ structure Infixing : INFIXING = struct
           in
             infixingLet (Syntax.VAL (x', m') :: dec') env' dec body
           end
-      | infixingLet dec' env (VALREC (f, x, m) :: dec) body =
+      | infixingLet dec' env (VALREC (f, m) :: dec) body =
           let 
             val f' = Id.gensym f
-            val x' = Id.gensym x
             val env' = Env.insert (env, f', NONE)
-            val m' = infixing (Env.insert (env', x', NONE)) m
+            val m' = infixing env' m
           in
-            infixingLet (Syntax.VALREC (f', x', m') :: dec') env' dec body
+            infixingLet (Syntax.VALREC (f', m') :: dec') env' dec body
           end
       | infixingLet dec' env (INFIX (assoc, d, vids) :: dec) body =
           let

@@ -5,8 +5,8 @@ structure Cps = struct
     (* x *)
     | VAR of Id.t
   and exp =
-    (* v1 v2 k *)
-      APP of value * value * cont
+    (* v k v* *)
+      APP of value * value list * cont
     (* k v *)
     | APP_TAIL of cont * value
     (* let val f = abs in e end *)
@@ -17,13 +17,13 @@ structure Cps = struct
     | IF of value * exp * exp
   and abs = (* XXX : should change the name *)
     (* fn k x => v *)
-      ABS of Id.t * Id.t * exp
+      ABS of Id.t * Id.t list * exp
     (* (* fn x => v *) *)
     (* | ABS_TAIL of Id.t * exp *)
     (* (v, v, v, ...) *)
     | TUPLE of value list
-    (* #n v *)                     
-    | GET of value * int (* abs, but tuple only *)
+    (* #n v *)
+    | GET of value * int (* value, but tuple only *)
   and cont =
       (* k *)
       CVAR of Id.t
@@ -34,9 +34,9 @@ structure Cps = struct
     | valueToString (VAR id) = Id.toString id
 
   fun vsToString seq = PP.seqToString (valueToString, "()", ", ", "(", ")") seq
-  
-  fun expToString (APP (v1, v2, cont)) =
-     valueToString v1 ^ " " ^ valueToString v2 ^ " " ^ contToString cont
+
+  fun expToString (APP (v, vs, cont)) =
+    PP.seqToString (valueToString, "", " ", "", "") (v :: vs) ^ " " ^ contToString cont
     | expToString (APP_TAIL (c, v)) =
       contToString c ^ " " ^ valueToString v
     | expToString (LET ((id, abs), exp)) =
@@ -45,8 +45,8 @@ structure Cps = struct
       "LET* " ^ Id.toString id ^ " = " ^ absToString abs ^ " in " ^ expToString exp
     | expToString (IF (v, e1, e2)) =
       ("IF " ^ valueToString v ^ " then " ^ expToString e1 ^ " else " ^ expToString e2)
-  and absToString (ABS (id1, id2, exp)) =
-      "(ABS (" ^ Id.toString id1 ^ ", " ^ Id.toString id2 ^ ") => " ^ expToString exp ^ ")"
+  and absToString (ABS (id, ids, exp)) =
+      "ABS" ^ PP.seqToString (Id.toString, "()", ",", "(", ")") (id :: ids) ^ " => " ^ expToString exp
     (* | absToString (ABS_TAIL (id, exp)) = *)
     (*   "(ABS* " ^ Id.toString id ^ " => " ^ expToString exp ^ ")" *)
     | absToString (TUPLE vs) = vsToString vs

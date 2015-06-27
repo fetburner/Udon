@@ -8,7 +8,7 @@ structure Id : ID = struct
   val seqToString = PP.seqToString (toString, "()", ", ", "(", ")")
 
   local
-    val seed = ref 0
+    val seed = ref 1
   in
     fun genId () =
       (seed := !seed + 1;
