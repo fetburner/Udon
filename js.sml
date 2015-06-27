@@ -72,5 +72,5 @@ structure Js = struct
       "(function (" ^ PP.seqToString (Id.toString, "", ", ", "", "") ids ^ ") { " ^ progToString prog ^ " })"
     | expToString (APP (func, args)) =
       expToString func ^ " (" ^ PP.seqToString (expToString, "", ", ", "", "") args ^ ")"
-    | expToString (GET (e, ind)) = expToString e ^ ".[" ^ Int.toString ind ^ "]"
+    | expToString (GET (e, ind)) = expToString e ^ "[" ^ Int.toString ind ^ "]"
 end

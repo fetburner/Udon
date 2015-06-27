@@ -1,2 +1,2 @@
 all:
-	ml-build sources.cm Udon.run test
+	ml-build sources.cm Udon.run udon
