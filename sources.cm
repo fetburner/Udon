@@ -21,6 +21,7 @@ Group is
   uncurrying.sml
   cps.sml
   translCps.sml
+  js.sml
   udon.grm
   udon.lex
   udon.sml

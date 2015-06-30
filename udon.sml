@@ -7,15 +7,12 @@ structure UdonParser = Join(structure LrParser = LrParser
                            structure ParserData = UdonLrVals.ParserData
                            structure Lex = UdonLex)
 
-fun exec exp stat =
-  ((print
-    (* o Js.progToString *)
-    (* o Js.transl *)
-    (* o (fn e => (print (Cps.expToString e); print "\n\n"; e)) *)
-    o Cps.expToString
+fun exec exp out =
+  (((fn str => TextIO.output (out, str))
+    o Js.progToString
+    o Js.transl
     o TranslCps.simpExp []
     o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
-    o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
     o Uncurrying.uncurrying
     o Typing.typing 0 (Env.fromList Prim.typeInfoBindings)
     o Infixing.infixing (Env.fromList Prim.infixInfoBindings)) exp
@@ -31,20 +28,23 @@ fun exec exp stat =
    | Infixing.UnboundVar x =>
        print ("Error : unbound variable " ^ x)
    | UnequalLengths =>
-       print "Error : inconsistent arity";
-   print "\n";
-   stat)
+       print "Error : inconsistent arity")
 
 fun print_error (s, _, _) = (print s; print "\n")
-(* REPL *)
-fun readEvalPrintLoop stat lexer =
-    let val (result, lexer') = UdonParser.parse(0, lexer, print_error, ())
-	val stat' = exec result stat
-	val (next, lexer'') = UdonParser.Stream.get lexer'
-    in readEvalPrintLoop stat' lexer''
-    end
-val lexer = UdonParser.makeLexer (fn _ => valOf (TextIO.inputLine TextIO.stdIn))
-fun run () = readEvalPrintLoop () lexer
 
+fun run (cmd, args) =
+  if List.length args = 0 then OS.Process.failure else
+  let
+    val fileName = List.nth (args, 0)
+    val outName = fileName ^ ".js"
+    val out = TextIO.openOut outName
+    val lexer = UdonParser.makeLexer (fn _ => TextIO.input (TextIO.openIn fileName))
+    val (result, lexer') = UdonParser.parse(0, lexer, print_error, ())
+  in
+    TextIO.output (out, TextIO.input (TextIO.openIn "jsTemplete.js"));
+    exec result out;
+    TextIO.closeOut out;
+    OS.Process.success
+  end
 
 end
