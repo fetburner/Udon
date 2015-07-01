@@ -1,0 +1,6 @@
+*~
+*.grm.sml
+*.grm.sig
+*.lex.sml
+.cm
+test/*.sml.js
