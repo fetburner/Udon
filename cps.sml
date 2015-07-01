@@ -11,10 +11,6 @@ structure Cps = struct
       VAL of value
     (* fn (x_1, ... x_n) k => e *)
     | ABS of Id.t list * Id.t * exp
-    (* (v_1, ... , v_n) *)
-    | TUPLE of value list
-    (* #n x *)
-    | TUPLE_GET of int * Id.t
     (* ( + ) (v_1, ... , v_n) *)
     | PRIM of Prim.t * value list
   (* e *)
@@ -27,6 +23,8 @@ structure Cps = struct
     | LET of (Id.t * term) * exp
     (* let val rec f = t in e end *)
     | LET_REC of (Id.t * term) * exp
+    (* let k = cont in exp *)
+    | LET_CONT of (Id.t * cont) * exp
     (* if v then e1 else e2 *)
     | IF of value * exp * exp
   (* C *)

@@ -1,10 +1,14 @@
 structure Prim = struct
   (* primitives *)
-  datatype t = 
+  datatype t =
       PLUS
     | MINUS
     | TIMES
     | LE
+    (* (v_1, ... , v_n) *)
+    | TUPLE
+    (* #n x *)
+    | TUPLE_GET of int
 
   (* pretty-printer *)
   fun toString PLUS = "+"
