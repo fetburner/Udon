@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # execute sml-file by udon2js + node.js and smlnj
 
 sh ./udon.sh $1
