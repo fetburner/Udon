@@ -1,2 +1,2 @@
 #!/bin/bash
-sml @SMLload=udon.x86-linux $1
+sml @SMLload=udon $1
