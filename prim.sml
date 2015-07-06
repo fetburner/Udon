@@ -15,10 +15,14 @@ structure Prim = struct
     | toString MINUS = "-"
     | toString TIMES = "*"
     | toString LE = "<="
+    | toString TUPLE = "make_tuple"
+    | toString (TUPLE_GET n) = "#" ^ Int.toString n
 
   fun priority (PLUS | MINUS) = SOME (6, Assoc.LEFT_ASSOC)
     | priority TIMES = SOME (7, Assoc.LEFT_ASSOC)
     | priority LE = SOME (4, Assoc.LEFT_ASSOC)
+    | priority TUPLE = NONE
+    | priority (TUPLE_GET n) = NONE
 
   fun typeOf (PLUS | MINUS | TIMES) =
         Type.FUN ([Type.TUPLE [Type.INT, Type.INT]], Type.INT)

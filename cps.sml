@@ -6,24 +6,24 @@ structure Cps = struct
     (* x *)
     | VAR of Id.t
   (* t *)
-  and term
+  and term =
     (* v *)
       VAL of value
-    (* fn (x_1, ... x_n) k => e *)
-    | ABS of Id.t list * Id.t * exp
+    (* fn ((x_1, ... , x_n), k) => e *)
+    | ABS of (Id.t list * Id.t) * exp
     (* ( + ) (v_1, ... , v_n) *)
     | PRIM of Prim.t * value list
   (* e *)
   and exp =
-    (* x (v_1, ... , v_n) C *)
-      APP of Id.t * value list * cont
+    (* x ((v_1, ... , v_n), C) *)
+      APP of Id.t * (value list * cont)
     (* k v *)
     | APP_TAIL of Id.t * value
     (* let val x = t in e end *)
     | LET of (Id.t * term) * exp
     (* let val rec f = t in e end *)
     | LET_REC of (Id.t * term) * exp
-    (* let k = cont in exp *)
+    (* let val rec k = C in e end *)
     | LET_CONT of (Id.t * cont) * exp
     (* if v then e1 else e2 *)
     | IF of value * exp * exp
@@ -39,23 +39,61 @@ structure Cps = struct
 
   fun vsToString seq = PP.seqToString (valueToString, "()", ", ", "(", ")") seq
 
-  fun expToString (APP (v, vs, cont)) =
-    PP.seqToString (valueToString, "", " ", "", "") (v :: vs) ^ " " ^ contToString cont
-    | expToString (APP_TAIL (c, v)) =
-      contToString c ^ " " ^ valueToString v
-    | expToString (LET ((id, abs), exp)) =
-      "LET " ^ Id.toString id ^ " = " ^ absToString abs ^ " in " ^ expToString exp
-    | expToString (LET_REC ((id, abs), exp)) =
-      "LET* " ^ Id.toString id ^ " = " ^ absToString abs ^ " in " ^ expToString exp
+  fun expToString (APP (k, (vs, cont))) =
+        Id.toString k
+        ^ " ("
+        ^ vsToString vs
+        ^ ", "
+        ^ contToString cont
+        ^ ")"
+    | expToString (APP_TAIL (k, v)) =
+        Id.toString k
+        ^ " "
+        ^ valueToString v
+    | expToString (LET ((x, t), e)) =
+        "let val "
+        ^ Id.toString x
+        ^ " = "
+        ^ termToString t
+        ^ " in "
+        ^ expToString e
+        ^ " end"
+    | expToString (LET_REC ((x, t), e)) =
+        "let val rec "
+        ^ Id.toString x
+        ^ " = "
+        ^ termToString t
+        ^ " in "
+        ^ expToString e
+        ^ " end"
+    | expToString (LET_CONT ((k, c), e)) =
+        "let val rec "
+        ^ Id.toString k
+        ^ " = "
+        ^ contToString c
+        ^ " in "
+        ^ expToString e
+        ^ " end"
     | expToString (IF (v, e1, e2)) =
-      ("IF " ^ valueToString v ^ " then " ^ expToString e1 ^ " else " ^ expToString e2)
-  and absToString (ABS (id, ids, exp)) =
-      "ABS" ^ PP.seqToString (Id.toString, "()", ",", "(", ")") (id :: ids) ^ " => " ^ expToString exp
-    (* | absToString (ABS_TAIL (id, exp)) = *)
-    (*   "(ABS* " ^ Id.toString id ^ " => " ^ expToString exp ^ ")" *)
-    | absToString (TUPLE vs) = vsToString vs
-    | absToString (GET (v, i)) = "#" ^ Int.toString i ^ " " ^ valueToString v
-  and contToString (CVAR id) = "*" ^ Id.toString id
-    | contToString (CABS (id, exp)) = "(CABS " ^ Id.toString id ^ " => " ^ expToString exp ^ ")"
+        "if "
+        ^ valueToString v
+        ^ " then "
+        ^ expToString e1
+        ^ " else "
+        ^ expToString e2
+  and termToString (VAL v) = valueToString v
+    | termToString (ABS ((xs, k), e)) =
+        "fn ("
+        ^ Id.seqToString xs
+        ^ ", "
+        ^ Id.toString k
+        ^ ") => "
+        ^ expToString e
+    | termToString (PRIM (p, vs)) =
+        Prim.toString p
+        ^ " "
+        ^ vsToString vs
+  and contToString (CVAR k) = Id.toString k
+    | contToString (CABS (x, e)) = "fn " ^ Id.toString x ^ " => " ^ expToString e
 
 end
