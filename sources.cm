@@ -23,6 +23,7 @@ Group is
   translCps.sml
   alpha.sml
   constFold.sml
+  inlining.sml
   udon.grm
   udon.lex
   udon.sml
