@@ -13,6 +13,7 @@ fun exec exp stat =
     (* o Js.transl *)
     (* o (fn e => (print (Cps.expToString e); print "\n\n"; e)) *)
     o Cps.expToString
+    o ConstFold.constFold Env.empty
     o Alpha.alphaConv Env.empty
     o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
