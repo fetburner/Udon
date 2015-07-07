@@ -13,7 +13,6 @@ fun exec exp stat =
     (* o Js.transl *)
     (* o (fn e => (print (Cps.expToString e); print "\n\n"; e)) *)
     o Cps.expToString
-    o TranslCps.simpExp []
     o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
     o Uncurrying.uncurrying
