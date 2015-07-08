@@ -153,6 +153,6 @@ functor InliningFn (P : sig val threshold : int end) = struct
           (count', fn inlinings => CABS (x, e' inlinings))
         end
 
-  fun inlining e =
-    (#2 (inliningExp Env.empty e)) Env.empty
+  fun inlining inlinings e =
+    (#2 (inliningExp Env.empty e)) inlinings
 end
