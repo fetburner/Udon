@@ -19,21 +19,6 @@ fun exec exp stat =
     o Cps.expToString
     o foldn
         (DeadCodeElim.deadCodeElim
-          o Inlining.inlining
-              (Env.fromList (map (fn (id, p) =>
-                let
-                  val tuple = Id.gensym "tuple"
-                  val x = Id.gensym "x"
-                  val y = Id.gensym "y"
-                  val result = Id.gensym "result"
-                  val k = Id.gensym "k"
-                in
-                  (id, Inlining.FUN_ABS (([tuple], k),
-                    Cps.LET ((x, Cps.PRIM (Prim.TUPLE_GET 1, [Cps.VAR tuple])),
-                      Cps.LET ((y, Cps.PRIM (Prim.TUPLE_GET 2, [Cps.VAR tuple])),
-                        Cps.LET ((result, Cps.PRIM (p, [Cps.VAR x, Cps.VAR y])),
-                          Cps.APP_TAIL (k, Cps.VAR result))))))
-                end) Prim.primitives))
           o ConstFold.constFold Env.empty
           o Alpha.alphaConv Env.empty) 10
     o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
