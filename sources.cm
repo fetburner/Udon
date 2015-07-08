@@ -1,12 +1,14 @@
 Group is
   $/basis.cm
   $/ml-yacc-lib.cm
+  $SMLNJ-LIB/Util/smlnj-lib.cm
   pP.sml
   type.sml
   id.sml
   id.sig
   env.sml
   env.sig
+  idSet.sml
   const.sml
   assoc.sml
   prim.sml
@@ -24,6 +26,7 @@ Group is
   alpha.sml
   constFold.sml
   inlining.sml
+  deadCodeElim.sml
   udon.grm
   udon.lex
   udon.sml

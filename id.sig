@@ -5,4 +5,5 @@ sig
   (* val fromString : string -> t option *)
   val seqToString : t list -> string
   val gensym : string -> t
+  val compare : t * t -> order
 end

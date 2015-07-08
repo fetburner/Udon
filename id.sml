@@ -16,4 +16,10 @@ structure Id : ID = struct
   end
 
   fun gensym s = {s = s, id = genId ()}
+
+  fun compare ({s = s1, id = id1}, {s = s2, id = id2}) =
+    case String.compare (s1, s2) of
+         EQUAL => Int.compare (id1, id2)
+       | ord => ord
+
 end
