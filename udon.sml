@@ -6,6 +6,7 @@ structure UdonLex = UdonLexFun(structure Tokens = UdonLrVals.Tokens)
 structure UdonParser = Join(structure LrParser = LrParser
                            structure ParserData = UdonLrVals.ParserData
                            structure Lex = UdonLex)
+structure Inlining = InliningFn (struct val threshold = 10 end)
 
 fun exec exp stat =
   ((print
@@ -13,7 +14,7 @@ fun exec exp stat =
     (* o Js.transl *)
     (* o (fn e => (print (Cps.expToString e); print "\n\n"; e)) *)
     o Cps.expToString
-    o Inlining.inlining 10
+    o Inlining.inlining
     o ConstFold.constFold Env.empty
     o Alpha.alphaConv Env.empty
     o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))

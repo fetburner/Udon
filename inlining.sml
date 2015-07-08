@@ -1,4 +1,4 @@
-structure Inlining = struct
+functor InliningFn (P : sig val threshold : int end) = struct
   open Cps
 
   datatype abs = FUN_ABS of (Id.t list * Id.t) * exp
@@ -44,28 +44,28 @@ structure Inlining = struct
 
   fun inliningAppTail (x, e) v = LET ((x, VAL v), e)
 
-  fun inliningTerm threshold count (t as (VAL v)) =
+  fun inliningTerm count (t as (VAL v)) =
         (countAppearInValue count v, fn _ => t)
-    | inliningTerm threshold count (ABS ((xs, k), e)) =
+    | inliningTerm count (ABS ((xs, k), e)) =
         let
-          val (count, e') = inliningExp threshold count e
+          val (count, e') = inliningExp count e
         in
           (count, fn inlinings => ABS ((xs, k), e' inlinings))
         end
-    | inliningTerm threshold count (t as (PRIM (_, vs))) =
+    | inliningTerm count (t as (PRIM (_, vs))) =
         (countAppearInValueSeq count vs, fn _ => t)
 
-  and inliningExp threshold count (APP (x, (vs, c))) =
+  and inliningExp count (APP (x, (vs, c))) =
         let
           val count' = countAppearInValueSeq (incr count x) vs
-          val (count'', c') = inliningCont threshold count' c
+          val (count'', c') = inliningCont count' c
         in
           (count'', fn inlinings =>
             case Env.find (inlinings, x) of
                  SOME (FUN_ABS abs) => inliningApp abs (vs, c' inlinings)
                | _ => APP (x, (vs, c' inlinings)))
         end
-    | inliningExp threshold count (e as (APP_TAIL (k, v))) =
+    | inliningExp count (e as (APP_TAIL (k, v))) =
         let
           val count' = incr (countAppearInValue count v) k
         in
@@ -74,10 +74,10 @@ structure Inlining = struct
                  SOME (CONT_ABS abs) => inliningAppTail abs v
                | _ => e)
         end
-    | inliningExp threshold count (LET ((x, t), e)) =
+    | inliningExp count (LET ((x, t), e)) =
         let
-          val (count', t') = inliningTerm threshold count t
-          val (count'', e') = inliningExp threshold count' e
+          val (count', t') = inliningTerm count t
+          val (count'', e') = inliningExp count' e
         in
           (count'', fn inlinings =>
             let 
@@ -86,7 +86,7 @@ structure Inlining = struct
                      ABS (abs as (_, body)) =>
                        if
                          Env.find (count'', x) = SOME 1
-                         orelse sizeOfExp body <= threshold
+                         orelse sizeOfExp body <= P.threshold
                        then Env.insert (inlinings, x, FUN_ABS abs)
                        else inlinings
                    | _ => inlinings
@@ -94,10 +94,10 @@ structure Inlining = struct
               LET ((x, t' inlinings'), e' inlinings')
             end)
         end
-    | inliningExp threshold count (LET_REC ((x, t), e)) =
+    | inliningExp count (LET_REC ((x, t), e)) =
         let
-          val (count', t') = inliningTerm threshold count t
-          val (count'', e') = inliningExp threshold count' e
+          val (count', t') = inliningTerm count t
+          val (count'', e') = inliningExp count' e
         in
           (count'', fn inlinings =>
             let 
@@ -106,7 +106,7 @@ structure Inlining = struct
                      ABS (abs as (_, body)) =>
                        if
                          Env.find (count'', x) = SOME 1
-                         orelse sizeOfExp body <= threshold
+                         orelse sizeOfExp body <= P.threshold
                        then Env.insert (inlinings, x, FUN_ABS abs)
                        else inlinings
                    | _ => inlinings
@@ -114,10 +114,10 @@ structure Inlining = struct
               LET_REC ((x, t' inlinings'), e' inlinings')
             end)
         end
-    | inliningExp threshold count (LET_CONT ((k, c), e)) =
+    | inliningExp count (LET_CONT ((k, c), e)) =
         let
-          val (count', c') = inliningCont threshold count c
-          val (count'', e') = inliningExp threshold count' e
+          val (count', c') = inliningCont count c
+          val (count'', e') = inliningExp count' e
         in
           (count'', fn inlinings =>
             let 
@@ -126,7 +126,7 @@ structure Inlining = struct
                      CABS (abs as (_, body)) =>
                        if
                          Env.find (count'', k) = SOME 1
-                         orelse sizeOfExp body <= threshold
+                         orelse sizeOfExp body <= P.threshold
                        then Env.insert (inlinings, k, CONT_ABS abs)
                        else inlinings
                    | _ => inlinings
@@ -134,25 +134,25 @@ structure Inlining = struct
               LET_CONT ((k, c' inlinings'), e' inlinings')
             end)
         end
-    | inliningExp threshold count (IF (v, e1, e2)) =
+    | inliningExp count (IF (v, e1, e2)) =
         let
           val count' = countAppearInValue count v
-          val (count'', e1') = inliningExp threshold count' e1
-          val (count''', e2') = inliningExp threshold count'' e2
+          val (count'', e1') = inliningExp count' e1
+          val (count''', e2') = inliningExp count'' e2
         in
           (count''', fn inlinings =>
             IF (v, e1' inlinings, e2' inlinings))
         end
 
-  and inliningCont threshold count (c as (CVAR k)) =
+  and inliningCont count (c as (CVAR k)) =
         (incr count k, fn _ => c)
-    | inliningCont threshold count (CABS (x, e)) =
+    | inliningCont count (CABS (x, e)) =
         let
-          val (count', e') = inliningExp threshold count e
+          val (count', e') = inliningExp count e
         in
           (count', fn inlinings => CABS (x, e' inlinings))
         end
 
-  fun inlining threshold e =
-    (#2 (inliningExp threshold Env.empty e)) Env.empty
+  fun inlining e =
+    (#2 (inliningExp Env.empty e)) Env.empty
 end
