@@ -34,24 +34,23 @@ structure Infixing : INFIXING = struct
       | infixing env (LET (dec, m)) = infixingLet [] env dec m
       | infixing env (SEQ ms) =
           let
+            fun reduceBinOp op1 (e1, e2) =
+              Syntax.APP (Syntax.VAR op1, Syntax.TUPLE [e1, e2])
+
             fun getToken (VAR x :: seq') =
                   (case Env.findName (env, x) of
                         SOME (x', SOME (prio, assoc)) =>
-                          SOME (BINOP_TOKEN (x', prio, assoc), seq')
+                          SOME (BINOP_TOKEN (reduceBinOp x', prio, assoc), seq')
                       | SOME (x', NONE) =>
                           SOME (EXP_TOKEN (Syntax.VAR x'), seq')
                       | NONE => raise (UnboundVar x))
               | getToken (m :: seq') =
                   SOME (EXP_TOKEN (infixing env m), seq')
               | getToken [] = NONE
-
-            fun reduceBinOp (e1, op1, e2) =
-              Syntax.APP (Syntax.VAR op1, Syntax.TUPLE [e1, e2])
           in
             case parseExp
                    {getToken = getToken,
-                    reduceApp = Syntax.APP,
-                    reduceBinOp = reduceBinOp}
+                    reduceApp = Syntax.APP}
                    ms of
                  SOME (e, _) => e
                | NONE => raise SyntaxError

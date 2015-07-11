@@ -2,12 +2,13 @@ structure Infixer = struct
   local
     open Assoc
   in
-    datatype 'a token = EXP_TOKEN of 'a | BINOP_TOKEN of Id.t * int * assoc
+    datatype 'a token =
+        EXP_TOKEN of 'a
+      | BINOP_TOKEN of ('a * 'a -> 'a) * int * assoc
 
     fun parseExp
       {getToken = getToken,
-       reduceApp = reduceApp,
-       reduceBinOp = reduceBinOp} =
+       reduceApp = reduceApp} =
       let
         fun parseFactor seq =
           case getToken seq of
@@ -35,14 +36,12 @@ structure Infixer = struct
                                  orelse prio1 = prio2
                                    andalso assoc1 = RIGHT_ASSOC then
                            case parseExp' e2 (op2, prio2, assoc2) seq'' of
-                                SOME (e, seq''') =>
-                                  SOME (reduceBinOp (e1, op1, e), seq''')
+                                SOME (e, seq''') => SOME (op1 (e1, e), seq''')
                               | NONE => NONE
                          else
-                           parseExp' (reduceBinOp (e1, op1, e2))
-                             (op2, prio2, assoc2) seq''
+                           parseExp' (op1 (e1, e2)) (op2, prio2, assoc2) seq''
                      | SOME (EXP_TOKEN _, _) => NONE
-                     | NONE => SOME (reduceBinOp (e1, op1, e2), seq'))
+                     | NONE => SOME (op1 (e1, e2), seq'))
              | NONE => NONE
         fun parseExp seq =
           case parseTerm seq of
