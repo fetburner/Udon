@@ -108,9 +108,9 @@ ATDEC : VAL VID EQUAL EXP
       | VAL REC VID EQUAL EXP
           (ConcreteSyntax.VALREC (VID, EXP))
       | INFIX DIGIT_OPT NVID
-          (ConcreteSyntax.INFIX (Assoc.LEFT_ASSOC, getOpt (DIGIT_OPT, 0), NVID))
+          (ConcreteSyntax.INFIX (Infixer.Assoc.LEFT, getOpt (DIGIT_OPT, 0), NVID))
       | INFIXR DIGIT_OPT NVID
-          (ConcreteSyntax.INFIX (Assoc.RIGHT_ASSOC, getOpt (DIGIT_OPT, 0), NVID))
+          (ConcreteSyntax.INFIX (Infixer.Assoc.RIGHT, getOpt (DIGIT_OPT, 0), NVID))
       | NONFIX NVID
           (ConcreteSyntax.NONFIX NVID)
 

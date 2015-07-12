@@ -18,9 +18,9 @@ structure Prim = struct
     | toString TUPLE = "make_tuple"
     | toString (TUPLE_GET n) = "#" ^ Int.toString n
 
-  fun priority (PLUS | MINUS) = SOME (6, Assoc.LEFT_ASSOC)
-    | priority TIMES = SOME (7, Assoc.LEFT_ASSOC)
-    | priority LE = SOME (4, Assoc.LEFT_ASSOC)
+  fun priority (PLUS | MINUS) = SOME (6, Infixer.Assoc.LEFT)
+    | priority TIMES = SOME (7, Infixer.Assoc.LEFT)
+    | priority LE = SOME (4, Infixer.Assoc.LEFT)
     | priority TUPLE = NONE
     | priority (TUPLE_GET n) = NONE
 

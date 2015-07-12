@@ -3,7 +3,6 @@ structure Infixing : INFIXING = struct
   exception UnboundVar of string
   exception SyntaxError
   local
-    open Assoc
     open Infixer
     open ConcreteSyntax
   in
@@ -37,23 +36,21 @@ structure Infixing : INFIXING = struct
             fun reduceBinOp op1 (e1, e2) =
               Syntax.APP (Syntax.VAR op1, Syntax.TUPLE [e1, e2])
 
-            fun getToken (VAR x :: seq') =
+            fun lookahead (VAR x :: _) =
                   (case Env.findName (env, x) of
                         SOME (x', SOME (prio, assoc)) =>
-                          SOME (BINOP_TOKEN (reduceBinOp x', prio, assoc), seq')
+                          Token.BINOP (reduceBinOp x', prio, assoc)
                       | SOME (x', NONE) =>
-                          SOME (EXP_TOKEN (Syntax.VAR x'), seq')
+                          Token.EXP (Syntax.VAR x')
                       | NONE => raise (UnboundVar x))
-              | getToken (m :: seq') =
-                  SOME (EXP_TOKEN (infixing env m), seq')
-              | getToken [] = NONE
+              | lookahead (m :: _) =
+                  Token.EXP (infixing env m)
+              | lookahead [] = Token.EOI
           in
-            case parseExp
-                   {getToken = getToken,
-                    reduceApp = Syntax.APP}
-                   ms of
-                 SOME (e, _) => e
-               | NONE => raise SyntaxError
+            parseExp
+              {getToken = tl,
+               lookahead = lookahead,
+               reduceApp = Syntax.APP} ms
           end
       | infixing env (PAREN m) = infixing env m
       | infixing env (TUPLE ms) =

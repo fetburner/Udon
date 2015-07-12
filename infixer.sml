@@ -1,59 +1,76 @@
 structure Infixer = struct
-  local
-    open Assoc
-  in
-    datatype 'a token =
-        EXP_TOKEN of 'a
-      | BINOP_TOKEN of ('a * 'a -> 'a) * int * assoc
+  exception InconsistentPriority
+  exception BeginsInfixOp
+  exception EndsInfixOp
 
-    fun parseExp
-      {getToken = getToken,
-       reduceApp = reduceApp} =
-      let
-        fun parseFactor seq =
-          case getToken seq of
-               SOME (EXP_TOKEN e, seq) => SOME (e, seq)
-             | SOME (BINOP_TOKEN _, _) => NONE
-             | NONE => NONE
-
-        fun parseTerm' e seq =
-          case parseFactor seq of
-               SOME (e', seq') =>
-                 parseTerm' (reduceApp (e, e')) seq'
-             | NONE => SOME (e, seq)
-        fun parseTerm seq =
-          case parseFactor seq of
-               SOME (e, seq') => parseTerm' e seq'
-             | NONE => NONE
-
-        fun parseExp' e1 (op1, prio1, assoc1) seq =
-          case parseTerm seq of
-               SOME (e2, seq') => 
-                 (case getToken seq' of
-                       SOME (BINOP_TOKEN (op2, prio2, assoc2), seq'') => 
-                         if prio1 = prio2 andalso assoc1 <> assoc2 then NONE
-                         else if prio1 < prio2 
-                                 orelse prio1 = prio2
-                                   andalso assoc1 = RIGHT_ASSOC then
-                           case parseExp' e2 (op2, prio2, assoc2) seq'' of
-                                SOME (e, seq''') => SOME (op1 (e1, e), seq''')
-                              | NONE => NONE
-                         else
-                           parseExp' (op1 (e1, e2)) (op2, prio2, assoc2) seq''
-                     | SOME (EXP_TOKEN _, _) => NONE
-                     | NONE => SOME (op1 (e1, e2), seq'))
-             | NONE => NONE
-        fun parseExp seq =
-          case parseTerm seq of
-               SOME (e, seq') => 
-                 (case getToken seq' of
-                       SOME (BINOP_TOKEN (op1, prio, assoc), seq'') =>
-                         parseExp' e (op1, prio, assoc) seq''
-                     | SOME (EXP_TOKEN _, _) => NONE
-                     | NONE => SOME (e, seq'))
-             | NONE => NONE
-      in
-        parseExp
-      end
+  structure Assoc = struct
+    datatype assoc = LEFT | RIGHT
   end
+
+  structure Token = struct
+    datatype 'a token =
+        EXP of 'a
+      | BINOP of ('a * 'a -> 'a) * int * Assoc.assoc
+      | EOI
+  end
+
+  (* state monad *)
+  fun return x s = (x, s)
+
+  infix >>= >>
+  fun f >>= g = fn s =>
+    let val (a, s') = f s in
+      g a s'
+    end
+
+ fun f >> g = f >>= (fn _ => g)
+
+  fun parseExp
+    {getToken = getToken',
+     lookahead = lookahead',
+     reduceApp = reduceApp} =
+    let
+      fun getToken s =
+        ((), getToken' s)
+      fun lookahead s =
+        return (lookahead' s) s
+
+      fun parseTerm' e =
+        lookahead >>= (fn
+            Token.EXP e' => getToken >> parseTerm' (reduceApp (e, e'))
+          | Token.BINOP _ => return e
+          | Token.EOI => return e)
+      fun parseTerm s =
+        (lookahead >>= (fn
+            Token.EXP e => getToken >> parseTerm' e
+          | Token.BINOP _ => raise BeginsInfixOp
+          | Token.EOI => raise EndsInfixOp)) s
+
+      fun parseExp' e1 (op1 as (reduce1, prio1, assoc1)) =
+        parseTerm >>= (fn e2 =>
+          lookahead >>= (fn
+              Token.BINOP (op2 as (_, prio2, assoc2)) =>
+                getToken >>
+                  (if prio1 = prio2 andalso assoc1 <> assoc2 then
+                    raise InconsistentPriority
+                  else if
+                    prio1 < prio2
+                    orelse prio1 = prio2
+                      andalso assoc1 = Assoc.RIGHT
+                  then
+                    parseExp' e2 op2 >>= (fn e =>
+                      return (reduce1 (e1, e)))
+                  else
+                    parseExp' (reduce1 (e1, e2)) op2)
+             (* | Token.EXP _ => (* Don't worry, Be happy. *) *)
+             | Token.EOI => return (reduce1 (e1, e2))))
+      fun parseExp s =
+        (parseTerm >>= (fn e =>
+          lookahead >>= (fn
+              Token.BINOP op1 => getToken >> parseExp' e op1
+            (* | Token.EXP _ => (* Don't worry, Be happy. *) *)
+            | Token.EOI => return e))) s
+    in
+      #1 o parseExp
+    end
 end

@@ -37,8 +37,12 @@ fun exec exp stat =
            ^ Type.toString t2)
    | Infixing.UnboundVar x =>
        print ("Error : unbound variable " ^ x)
-   | UnequalLengths =>
-       print "Error : inconsistent arity";
+   | ListPair.UnequalLengths =>
+       print "Error : inconsistent arity"
+   | Infixer.BeginsInfixOp =>
+       print "Error : expression or pattern begins with infix identifier"
+   | Infixer.EndsInfixOp =>
+       print "Error : expression or pattern ends with infix identifier";
    print "\n";
    stat)
 

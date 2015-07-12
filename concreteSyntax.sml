@@ -29,7 +29,7 @@ structure ConcreteSyntax = struct
     | VALREC of string * exp
     (* infix d vid_1 ... vid_n *)
     (* infixr d vid_1 ... vid_n *)
-    | INFIX of Assoc.assoc * int * string list
+    | INFIX of Infixer.Assoc.assoc * int * string list
     (* nonfix vid_1 ... vid_n *)
     | NONFIX of string list
 
@@ -89,11 +89,11 @@ structure ConcreteSyntax = struct
       ^ f
       ^ " = "
       ^ expToString m
-    | INFIX (Assoc.LEFT_ASSOC, d, vids) =>
+    | INFIX (Infixer.Assoc.LEFT, d, vids) =>
         "infixl "
         ^ Int.toString d
         ^ vidSeqToString vids
-    | INFIX (Assoc.RIGHT_ASSOC, d, vids) =>
+    | INFIX (Infixer.Assoc.RIGHT, d, vids) =>
         "infixr "
         ^ Int.toString d
         ^ vidSeqToString vids
