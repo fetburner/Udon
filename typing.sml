@@ -54,6 +54,14 @@ structure Typing : TYPING = struct
             Type.unify (expTypeOf m', Type.TUPLE (idSeqTypeOf xs'));
             E (env, CASE (m', xs', n'), expTypeOf n')
           end
+      | typingExp l env (Syntax.PRIM (p, ms)) =
+          let
+            val t = Type.genvar l
+            val ms' = map (typingExp l env) ms
+          in
+            Type.unify (Prim.typeOf p, Type.FUN (expSeqTypeOf ms', t));
+            E (env, PRIM (p, ms'), t)
+          end
     and typingLet l dec' env0 env [] body =
           let 
             val body' = typingExp l env body

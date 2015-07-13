@@ -24,12 +24,10 @@ fun exec exp stat =
     o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
     o Uncurrying.uncurrying
-    o Typing.typing 0 (Env.fromList Prim.typeInfoBindings)
-    o Infixing.infixing (Env.fromList Prim.infixInfoBindings)) exp
+    o Typing.typing 0 Injection.typeInfo
+    o Infixing.infixing Injection.infixInfo) exp
    handle
-     Infixing.SyntaxError =>
-       print "Syntax error"
-   | Type.Unify (t1, t2) =>
+    Type.Unify (t1, t2) =>
        print
          ("Error : failed to unify "
            ^ Type.toString t1

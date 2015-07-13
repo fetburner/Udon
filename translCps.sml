@@ -37,12 +37,20 @@ structure TranslCps = struct
         let
           val x = Id.gensym "tuple"
         in
-          translTuple ms x (Cps.APP_TAIL (k, Cps.VAR x))
+          translPrim Prim.TUPLE ms x (Cps.APP_TAIL (k, Cps.VAR x))
         end
     | transl (E (_, TUPLE ms, _)) (Cps.CABS (x, e)) =
-        translTuple ms x e
+        translPrim Prim.TUPLE ms x e
     | transl (E (_, CASE (m, xs, n), _)) c =
         translCase m xs n c
+    | transl (E (_, PRIM (p, ms), _)) (Cps.CVAR k) =
+        let
+          val x = Id.gensym "tuple"
+        in
+          translPrim p ms x (Cps.APP_TAIL (k, Cps.VAR x))
+        end
+    | transl (E (_, PRIM (p, ms), _)) (Cps.CABS (x, e)) =
+        translPrim p ms x e
 
   and translIf (m, n1, n2) c =
       let
@@ -94,20 +102,20 @@ structure TranslCps = struct
        | VALREC _ => raise (Fail "translLet: VALREC")
 
   and translApp funcExp argsExp cont =
-      let
-        val funcId = Id.gensym "fn"
-      in
-        transl funcExp
-          (Cps.CABS
-            (funcId,
-             translExpSeq argsExp [] (fn ids =>
-               Cps.APP (funcId, (ids, cont)))))
-      end
+    let
+      val funcId = Id.gensym "fn"
+    in
+      transl funcExp
+        (Cps.CABS
+          (funcId,
+           translExpSeq argsExp [] (fn ids =>
+             Cps.APP (funcId, (ids, cont)))))
+    end
 
-  and translTuple ms x e =
-        translExpSeq ms [] (fn ids =>
-          Cps.LET
-            ((x, Cps.PRIM (Prim.TUPLE, ids)), e))
+  and translPrim p ms x e =
+    translExpSeq ms [] (fn ids =>
+      Cps.LET
+        ((x, Cps.PRIM (p, ids)), e))
 
   and translExpSeq [] ids body = body (rev ids)
     | translExpSeq (e :: exps) ids body =

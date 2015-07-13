@@ -108,6 +108,8 @@ structure Uncurrying = struct
           in
             E (env, CASE (m', xs', n'), expTypeOf n')
           end
+      | uncurryingExp env (E (_, PRIM (p, ms), t)) =
+          E (env, PRIM (p, map (uncurryingExp env) ms), t)
     and uncurryingLet dec' env0 env [] body =
           let
             val body' = uncurryingExp env body

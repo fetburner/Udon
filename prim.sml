@@ -25,20 +25,14 @@ structure Prim = struct
     | priority (TUPLE_GET n) = NONE
 
   fun typeOf (PLUS | MINUS | TIMES) =
-        Type.FUN ([Type.TUPLE [Type.INT, Type.INT]], Type.INT)
+        Type.FUN ([Type.INT, Type.INT], Type.INT)
     | typeOf LE =
-        Type.FUN ([Type.TUPLE [Type.INT, Type.INT]], Type.BOOL)
+        Type.FUN ([Type.INT, Type.INT], Type.BOOL)
 
   val primitives =
     map (fn p => (Id.gensym (toString p), p))
-    [PLUS,
-    MINUS,
-    TIMES,
-    LE]
-
-  val infixInfoBindings =
-    map (fn (id, p) => (id, priority p)) primitives
-
-  val typeInfoBindings =
-    map (fn (id, p) => (id, typeOf p)) primitives
+    [ PLUS,
+      MINUS,
+      TIMES,
+      LE ]
 end

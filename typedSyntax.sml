@@ -28,6 +28,8 @@ structure TypedSyntax = struct
     | TUPLE of exp list
     (* case M of (x_1, ... , x_n) => N *)
     | CASE of exp * id list * exp
+    (* op (+) (M_1, ..., M_n) *)
+    | PRIM of Prim.t * exp list
   and dec =
     (* val x : T = M *)
       VAL of id * exp
@@ -73,6 +75,12 @@ structure TypedSyntax = struct
         ^ idSeqToString xs
         ^ " => "
         ^ expToString n
+        ^ ")"
+    | expBodyToString (PRIM (p, ms)) =
+        "(op "
+        ^ Prim.toString p
+        ^ " "
+        ^ expSeqToString ms
         ^ ")"
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
   and decToString dec = PP.seqToString (fn

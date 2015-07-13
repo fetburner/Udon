@@ -1,20 +1,21 @@
 structure Infixing : INFIXING = struct
   (* exception that arises when unbound variable occur *)
   exception UnboundVar of string
-  exception SyntaxError
   local
     open Infixer
     open ConcreteSyntax
   in
+    fun reduceBinOp op1 (e1, e2) =
+      Syntax.APP (Syntax.VAR op1, Syntax.TUPLE [e1, e2])
+
+    fun infixingVar env x =
+      case Env.findName (env, x) of
+            SOME (x', _) => Syntax.VAR x'
+          | NONE => raise (UnboundVar x)
+
     fun infixing env (CONST c) = Syntax.CONST c
-      | infixing env (VAR x) =
-          (case Env.findName (env, x) of
-                SOME (x', _) => Syntax.VAR x'
-              | NONE => raise (UnboundVar x))
-      | infixing env (OP x) =
-          (case Env.findName (env, x) of
-                SOME (id, _) => Syntax.VAR id
-              | NONE => raise (UnboundVar x))
+      | infixing env (VAR x) = infixingVar env x
+      | infixing env (OP x) = infixingVar env x
       | infixing env (IF (m, n1, n2)) =
           let
             val m' = infixing env m
@@ -33,13 +34,10 @@ structure Infixing : INFIXING = struct
       | infixing env (LET (dec, m)) = infixingLet [] env dec m
       | infixing env (SEQ ms) =
           let
-            fun reduceBinOp op1 (e1, e2) =
-              Syntax.APP (Syntax.VAR op1, Syntax.TUPLE [e1, e2])
-
             fun lookahead (VAR x :: _) =
                   (case Env.findName (env, x) of
-                        SOME (x', SOME (prio, assoc)) =>
-                          Token.BINOP (reduceBinOp x', prio, assoc)
+                        SOME (x', SOME desc) =>
+                          Token.BINOP desc
                       | SOME (x', NONE) =>
                           Token.EXP (Syntax.VAR x')
                       | NONE => raise (UnboundVar x))
@@ -88,7 +86,7 @@ structure Infixing : INFIXING = struct
             val vids' =
               map (fn vid =>
                 case Env.findName (env, vid) of
-                     SOME (vid', _) => (vid', SOME (d, assoc))
+                     SOME (vid', _) => (vid', SOME (reduceBinOp vid', d, assoc))
                    | NONE => raise (UnboundVar vid)) vids
             val env' = Env.insertList (env, vids')
           in
