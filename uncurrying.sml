@@ -28,31 +28,31 @@ structure Uncurrying = struct
     open TypedSyntax
   in
     (* collect arguments of lambda abstractions *)
-    fun collectAbs args (E (_, ABS (xs, m), _)) =
+    fun collectAbs args (E (ABS (xs, m), _)) =
           collectAbs (rev xs @ args) m
       | collectAbs args m = (rev args, m)
     val collectAbs = collectAbs []
 
     (* collect arguments of applications *)
-    fun collectApps args (E (_, APP (m, ns), _)) =
+    fun collectApps args (E (APP (m, ns), _)) =
           collectApps (rev ns @ args) m
       | collectApps args m = (m, args)
     val collectApps = collectApps []
     
-    fun uncurryingExp env (E (_, m as (CONST _), t)) =
-          E (env, m, t)
-      | uncurryingExp env (E (_, m as (VAR x), t)) =
+    fun uncurryingExp env (E (m as (CONST _), t)) =
+          E (m, t)
+      | uncurryingExp env (E (m as (VAR x), t)) =
           (* don't care level because no generalization *)
-          E (env, m, Type.inst 114514 (getOpt (Env.find (env, x), t)))
-      | uncurryingExp env (E (_, IF (m, n1, n2), _)) =
+          E (m, Type.inst 114514 (getOpt (Env.find (env, x), t)))
+      | uncurryingExp env (E (IF (m, n1, n2), _)) =
           let
             val m' = uncurryingExp env m
             val n1' = uncurryingExp env n1
             val n2' = uncurryingExp env n2
           in
-            E (env, IF (m', n1', n2'), expTypeOf n1') 
+            E (IF (m', n1', n2'), expTypeOf n1') 
           end
-      | uncurryingExp env (m as (E (_, ABS _, _))) =
+      | uncurryingExp env (m as (E (ABS _, _))) =
           let
             val (xs, n) = collectAbs m
             val xs' = map uncurryingId xs
@@ -60,19 +60,18 @@ structure Uncurrying = struct
             val n' = uncurryingExp env' n
             val (t1s, t2) = collectArgs (expTypeOf n')
             val ys = map (fn t => (Id.gensym "dummy", t)) t1s
-            val env'' = Env.insertList (env', ys)
           in
             if null t1s then
-              E (env, ABS (xs', n'), Type.FUN (idSeqTypeOf xs', expTypeOf n'))
+              E (ABS (xs', n'), Type.FUN (idSeqTypeOf xs', expTypeOf n'))
             else
               (* eta expansion *)
-              E (env,
-                ABS (xs' @ ys,
-                  E (env'', APP (n', map (fn (y, t) =>
-                    E (env'', VAR y, t)) ys), t2)),
+              E
+                (ABS (xs' @ ys,
+                  E (APP (n', map (fn (y, t) =>
+                    E (VAR y, t)) ys), t2)),
                 Type.FUN (idSeqTypeOf xs' @ idSeqTypeOf ys, t2))
           end
-      | uncurryingExp env (e as (E (_, APP _, _))) =
+      | uncurryingExp env (e as (E (APP _, _))) =
           let
             val (m, ns) = collectApps e
             val m' = uncurryingExp env m
@@ -80,41 +79,40 @@ structure Uncurrying = struct
             val (t1s, t2) = collectArgs (expTypeOf m')
             val t1s' = List.drop (t1s, length ns')
             val xs = map (fn t => (Id.gensym "dummy", t)) t1s'
-            val env' = Env.insertList (env, xs)
           in
             if null xs then
-              E (env, APP (m', ns'), t2)
+              E (APP (m', ns'), t2)
             else
               (* eta expansion *)
-              E (env,
-                ABS (xs,
-                  E (env',
-                    APP (m', ns' @ map (fn (x, t) =>
-                      E (env', VAR x, t)) xs), t2)), Type.FUN (t1s', t2))
+              E
+                (ABS (xs,
+                  E
+                    (APP (m', ns' @ map (fn (x, t) =>
+                      E (VAR x, t)) xs), t2)), Type.FUN (t1s', t2))
           end
-      | uncurryingExp env (E (_, LET (dec, m), _)) =
+      | uncurryingExp env (E (LET (dec, m), _)) =
           uncurryingLet [] env env dec m
-      | uncurryingExp env (E (_, TUPLE ms, _)) =
+      | uncurryingExp env (E (TUPLE ms, _)) =
           let
             val ms' = map (uncurryingExp env) ms
           in
-            E (env, TUPLE ms', Type.TUPLE (expSeqTypeOf ms'))
+            E (TUPLE ms', Type.TUPLE (expSeqTypeOf ms'))
           end
-      | uncurryingExp env (E (_, CASE (m, xs, n), _)) =
+      | uncurryingExp env (E (CASE (m, xs, n), _)) =
           let
             val m' = uncurryingExp env m
             val xs' = map uncurryingId xs
             val n' = uncurryingExp (Env.insertList (env, xs')) n
           in
-            E (env, CASE (m', xs', n'), expTypeOf n')
+            E (CASE (m', xs', n'), expTypeOf n')
           end
-      | uncurryingExp env (E (_, PRIM (p, ms), t)) =
-          E (env, PRIM (p, map (uncurryingExp env) ms), t)
+      | uncurryingExp env (E (PRIM (p, ms), t)) =
+          E (PRIM (p, map (uncurryingExp env) ms), t)
     and uncurryingLet dec' env0 env [] body =
           let
             val body' = uncurryingExp env body
           in
-            E (env0, LET (rev dec', body'), expTypeOf body')
+            E (LET (rev dec', body'), expTypeOf body')
           end
       | uncurryingLet dec' env0 env (VAL (x, m) :: dec) body =
           let
@@ -133,7 +131,6 @@ structure Uncurrying = struct
             uncurryingLet (VALREC (f', m') :: dec') env0 env' dec body
           end
 
-    fun uncurrying (m as (E (env, _, _))) = 
-      uncurryingExp env m
+    val uncurrying = uncurryingExp
   end
 end

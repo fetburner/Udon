@@ -6,11 +6,11 @@ structure Typing : TYPING = struct
   in
     (* perform type inference *)
     fun typingExp l env (Syntax.CONST c) =
-          E (env, CONST c, Const.typeOf c)
+          E (CONST c, Const.typeOf c)
       | typingExp l env (Syntax.VAR x) =
           (case Env.find (env, x) of
                 NONE => raise (UnboundVar x)
-              | SOME t => E (env, VAR x, Type.inst l t))
+              | SOME t => E (VAR x, Type.inst l t))
       | typingExp l env (Syntax.IF (m, n1, n2)) =
           let
             val m' = typingExp l env m
@@ -19,14 +19,14 @@ structure Typing : TYPING = struct
           in
             Type.unify (expTypeOf m', Type.BOOL);
             Type.unify (expTypeOf n1', expTypeOf n2');
-            E (env, IF (m', n1', n2'), expTypeOf n1')
+            E (IF (m', n1', n2'), expTypeOf n1')
           end
       | typingExp l env (Syntax.ABS (x, m)) =
           let
             val x' = (x, Type.genvar l)
             val m' = typingExp l (Env.insertList (env, [x'])) m
           in
-            E (env, ABS ([x'], m'), Type.FUN ([idTypeOf x'], expTypeOf m'))
+            E (ABS ([x'], m'), Type.FUN ([idTypeOf x'], expTypeOf m'))
           end
       | typingExp l env (Syntax.APP (m, n)) =
           let
@@ -35,7 +35,7 @@ structure Typing : TYPING = struct
             val t12 = Type.genvar l
           in
             Type.unify (expTypeOf m', Type.FUN ([expTypeOf n'], t12));
-            E (env, APP (m', [n']), t12)
+            E (APP (m', [n']), t12)
           end
       | typingExp l env (Syntax.LET (dec, m)) =
           typingLet l [] env env dec m
@@ -43,7 +43,7 @@ structure Typing : TYPING = struct
           let
             val ms' = map (typingExp l env) ms
           in
-            E (env, TUPLE ms', Type.TUPLE (map expTypeOf ms'))
+            E (TUPLE ms', Type.TUPLE (map expTypeOf ms'))
           end
       | typingExp l env (Syntax.CASE (m, xs, n)) =
           let
@@ -52,7 +52,7 @@ structure Typing : TYPING = struct
             val n' = typingExp l (Env.insertList (env, xs')) n
           in
             Type.unify (expTypeOf m', Type.TUPLE (idSeqTypeOf xs'));
-            E (env, CASE (m', xs', n'), expTypeOf n')
+            E (CASE (m', xs', n'), expTypeOf n')
           end
       | typingExp l env (Syntax.PRIM (p, ms)) =
           let
@@ -60,13 +60,13 @@ structure Typing : TYPING = struct
             val ms' = map (typingExp l env) ms
           in
             Type.unify (Prim.typeOf p, Type.FUN (expSeqTypeOf ms', t));
-            E (env, PRIM (p, ms'), t)
+            E (PRIM (p, ms'), t)
           end
     and typingLet l dec' env0 env [] body =
           let 
             val body' = typingExp l env body
           in
-            E (env0, LET (rev dec', body'), expTypeOf body')
+            E (LET (rev dec', body'), expTypeOf body')
           end
       | typingLet l dec' env0 env (Syntax.VAL (x, m) :: dec) body =
           let
@@ -91,6 +91,6 @@ structure Typing : TYPING = struct
           end
 
     (* typing expression *)
-    fun typing l env m = typingExp l env m
+    val typing = typingExp
   end
 end

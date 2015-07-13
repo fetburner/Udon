@@ -23,7 +23,7 @@ fun exec exp stat =
           o Alpha.alphaConv Env.empty) 10
     o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
-    o Uncurrying.uncurrying
+    o Uncurrying.uncurrying Injection.typeInfo
     o Typing.typing 0 Injection.typeInfo
     o Infixing.infixing Injection.infixInfo) exp
    handle
