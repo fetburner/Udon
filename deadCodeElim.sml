@@ -1,11 +1,6 @@
 structure DeadCodeElim = struct
   open Cps
 
-  datatype binding =
-      LET_BINDING of term
-    | LET_REC_BINDING of term
-    | LET_CONT_BINDING of cont
-
   fun freeVarOfValue (CONST _) = IdSet.empty
     | freeVarOfValue (VAR x) = IdSet.singleton x
 
@@ -70,7 +65,7 @@ structure DeadCodeElim = struct
           val (freevar1, e1') = deadCodeElimExp e1
           val (freevar2, e2') = deadCodeElimExp e2
           val freevar =
-            IdSet.difference (IdSet.union (freevar1, freevar2), freeVarOfValue v)
+            IdSet.union (IdSet.union (freevar1, freevar2), freeVarOfValue v)
         in
           (freevar, IF (v, e1', e2'))
         end
