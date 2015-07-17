@@ -96,4 +96,34 @@ structure Cps = struct
   and contToString (CVAR k) = Id.toString k
     | contToString (CABS (x, e)) = "fn " ^ Id.toString x ^ " => " ^ expToString e
 
+  local
+    val op @ = IdSet.union
+    val op - = IdSet.subtract
+  in
+    fun freeVarOfValue (CONST _) = IdSet.empty
+      | freeVarOfValue (VAR x) = IdSet.singleton x
+
+    fun freeVarOfValueSeq vs =
+      foldl op @ IdSet.empty (map freeVarOfValue vs)
+
+    fun freeVarOfTerm (VAL v) = freeVarOfValue v
+      | freeVarOfTerm (ABS ((xs, k), e)) =
+          IdSet.subtractList (freeVarOfExp e, k :: xs)
+      | freeVarOfTerm (PRIM (_, vs)) = freeVarOfValueSeq vs
+
+    and freeVarOfExp (APP (x, (vs, c))) =
+          IdSet.add (freeVarOfValueSeq vs @ freeVarOfCont c, x)
+      | freeVarOfExp (APP_TAIL (k, v)) = IdSet.add (freeVarOfValue v, k)
+      | freeVarOfExp (LET ((x, t), e)) =
+          IdSet.subtract (freeVarOfTerm t, x) @ freeVarOfExp e
+      | freeVarOfExp (LET_REC ((x, t), e)) =
+          IdSet.subtract (freeVarOfTerm t @ freeVarOfExp e, x)
+      | freeVarOfExp (LET_CONT ((k, c), e)) =
+          IdSet.subtract (freeVarOfCont c @ freeVarOfExp e, k)
+      | freeVarOfExp (IF (v, e1, e2)) =
+          freeVarOfValue v @ freeVarOfExp e1 @ freeVarOfExp e2
+
+    and freeVarOfCont (CVAR k) = IdSet.singleton k
+      | freeVarOfCont (CABS (x, e)) = IdSet.subtract (freeVarOfExp e, x)
+  end
 end
