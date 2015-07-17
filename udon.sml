@@ -19,6 +19,7 @@ fun exec exp stat =
     o Cps.expToString
     o foldn
         (DeadCodeElim.deadCodeElim
+          o Hoisting.hoisting
           o ConstFold.constFold Env.empty
           o Alpha.alphaConv Env.empty) 10
     o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
@@ -54,6 +55,5 @@ fun readEvalPrintLoop stat lexer =
     end
 val lexer = UdonParser.makeLexer (fn _ => valOf (TextIO.inputLine TextIO.stdIn))
 fun run () = readEvalPrintLoop () lexer
-
 
 end

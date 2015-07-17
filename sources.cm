@@ -22,6 +22,7 @@ Group is
   uncurrying.sml
   cps.sml
   translCps.sml
+  hoisting.sml
   alpha.sml
   constFold.sml
   inlining.sml
