@@ -3,9 +3,9 @@ structure Cps = struct
   datatype term =
     (* c *)
       CONST of Const.t
-    (* x *)
-    | VAR of Id.t
-    (* x_{y} *)
+    (* l *)
+    | LABEL of Id.t
+    (* l_{x} *)
     | ARG of { func : Id.t, arg : Id.t }
     (* ( + ) (t_1, ... , t_n) *)
     | PRIM of { prim : Prim.t, args : term list }
@@ -20,28 +20,32 @@ structure Cps = struct
   type prog = { args : Id.t list, body : exp } IdMap.map
 
   fun termToString (CONST c) = Const.toString c
-    | termToString (VAR x) = Id.toString x
+    | termToString (LABEL x) = Id.toString x
     | termToString (ARG { func = f, arg = x }) =
         Id.toString f ^ "_{" ^ Id.toString x ^ "}"
     | termToString (PRIM { prim = p, args = ts }) =
-        Prim.termToString p
+        "("
+        ^ Prim.toString p
         ^ " "
         ^ termSeqToString ts
+        ^ ")"
   and termSeqToString seq =
     PP.seqToString (termToString, "()", ", ", "(", ")") seq
 
   fun expToString (APP { func = t, args = ts }) =
-        termToString t
+        "("
+        ^ termToString t
         ^ " "
         ^ termSeqToString ts
-    | expToString (IF { cond : t, then_ : x, else_ : y }) =
-        "if "
+        ^ ")"
+    | expToString (IF { cond = t, then_ = x, else_ = y }) =
+        "(if "
         ^ termToString t
         ^ " then "
         ^ termToString x
         ^ " () else "
         ^ termToString y
-        ^ " ()"
+        ^ " ())"
 
   fun progToStrig prog =
     PP.seqToString
@@ -50,5 +54,5 @@ structure Cps = struct
         ^ " = fn "
         ^ Id.seqToString xs
         ^ " => "
-        ^ expToString m, " and ", "",) (IdMap.listItemsi prog)
+        ^ expToString m, "", "\n", "", "") (IdMap.listItemsi prog)
 end

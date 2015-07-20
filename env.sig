@@ -6,5 +6,6 @@ signature ENV = sig
   val insertList : ('a t * (Id.t * 'a) list) -> 'a t
   val fromList : (Id.t * 'a) list -> 'a t
   val find : ('a t * Id.t) -> 'a option
+  val lookup : ('a t * Id.t) -> 'a
   val findName : ('a t * string) -> (Id.t * 'a) option
 end

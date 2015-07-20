@@ -9,6 +9,7 @@ Group is
   env.sml
   env.sig
   idSet.sml
+  idMap.sml
   const.sml
   prim.sml
   syntax.sml
@@ -19,14 +20,8 @@ Group is
   infixer.sml
   infixing.sml
   infixing.sig
-  uncurrying.sml
   cps.sml
   translCps.sml
-  hoisting.sml
-  alpha.sml
-  constFold.sml
-  inlining.sml
-  deadCodeElim.sml
   injection.sml
   udon.grm
   udon.lex

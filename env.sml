@@ -10,6 +10,8 @@ structure Env : ENV = struct
     insertList (empty, bindings)
   fun find (env, x) =
     Option.map #2 (List.find (fn (y, _) => x = y) env)
+  fun lookup (env, x) =
+    #2 (valOf (List.find (fn (y, _) => x = y) env))
   fun findName (env: 'a t, x: string) =
     (List.find (fn ({s, id}, _) => x = s) env)
 end
