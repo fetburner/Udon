@@ -10,6 +10,8 @@ Group is
   env.sig
   idSet.sml
   idMap.sml
+  state.sig
+  state.sml
   const.sml
   prim.sml
   syntax.sml
@@ -22,6 +24,7 @@ Group is
   infixing.sig
   cps.sml
   translCps.sml
+  constFold.sml
   injection.sml
   udon.grm
   udon.lex

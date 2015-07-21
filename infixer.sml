@@ -1,4 +1,6 @@
 structure Infixer = struct
+  open State
+
   exception InconsistentPriority
   exception BeginsInfixOp
   exception EndsInfixOp
@@ -14,26 +16,17 @@ structure Infixer = struct
       | EOI
   end
 
-  (* state monad *)
-  fun return x s = (x, s)
-
   infix >>= >>
-  fun f >>= g = fn s =>
-    let val (a, s') = f s in
-      g a s'
-    end
-
- fun f >> g = f >>= (fn _ => g)
 
   fun parseExp
     {getToken = getToken',
      lookahead = lookahead',
      reduceApp = reduceApp} =
     let
-      fun getToken s =
-        ((), getToken' s)
-      fun lookahead s =
-        return (lookahead' s) s
+      val getToken = modify getToken'
+
+      val lookahead =
+        get >>= (fn s => return (lookahead' s))
 
       fun parseTerm' e =
         lookahead >>= (fn

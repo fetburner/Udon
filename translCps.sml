@@ -1,21 +1,13 @@
 structure TranslCps = struct
+  open State
   open TypedSyntax
   exception Fail of string
 
-  (* main translation function *)
-  type ('s, 'a) state = 's -> 'a * 's
-  fun return x s = (x, s)
-
   infix >>= >>
-  fun f >>= g = fn s =>
-    let val (a, s') = f s in
-      g a s'
-    end
 
-  fun f >> g = f >>= (fn _ => g)
-
-  fun insert x args m p =
-    ((), IdMap.insert (p, x, { args = args, body = m }))
+  (* main translation function *)
+  fun insert x args m =
+    modify (fn p => IdMap.insert (p, x, { args = args, body = m }))
 
   datatype cont =
       CVAR of Cps.term
@@ -136,8 +128,8 @@ structure TranslCps = struct
   fun transl entry m =
     let
       val k = Id.gensym "k"
-      val (m', prog) =
-        translExp Env.empty m (CVAR (Cps.ARG { func = entry, arg = k })) IdMap.empty
+      val (m', prog) = runState
+        (translExp Env.empty m (CVAR (Cps.ARG { func = entry, arg = k }))) IdMap.empty
     in
       IdMap.insert (prog, entry, { args = [k], body = m' })
     end
