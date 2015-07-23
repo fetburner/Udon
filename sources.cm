@@ -24,7 +24,6 @@ Group is
   infixing.sig
   cps.sml
   translCps.sml
-  constFold.sml
   injection.sml
   udon.grm
   udon.lex
