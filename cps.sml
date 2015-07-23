@@ -47,7 +47,7 @@ structure Cps = struct
         ^ termToString y
         ^ " ())"
 
-  fun progToStrig prog =
+  fun progToString prog =
     PP.seqToString
       (fn (f, { args = xs, body = m }) =>
         Id.toString f

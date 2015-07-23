@@ -15,7 +15,7 @@ fun exec exp stat =
     (* o Js.progToString *)
     (* o Js.transl *)
     (* o (fn e => (print (Cps.expToString e); print "\n\n"; e)) *)
-    o Cps.progToStrig
+    o Cps.progToString
     o TranslCps.transl (Id.gensym "main")
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
     o Typing.typing 0 Injection.typeInfo
