@@ -18,6 +18,7 @@ fun exec exp stat =
     o Cps.progToString
     o TranslCps.transl (Id.gensym "main")
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
+    o Uncurrying.uncurrying
     o Typing.typing 0 Injection.typeInfo
     o Infixing.infixing Injection.infixInfo) exp
    handle

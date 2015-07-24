@@ -25,6 +25,7 @@ Group is
   cps.sml
   translCps.sml
   injection.sml
+  uncurrying.sml
   udon.grm
   udon.lex
   udon.sml
