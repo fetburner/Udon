@@ -93,8 +93,8 @@ structure TranslCps = struct
     end
 
   and translApp env m ns k =
-    translExp env m (CABS (fn m' =>
-      translExpSeq env ns [] (fn ns' =>
+    translExpSeq env (rev ns) [] (fn ns' =>
+      translExp env m (CABS (fn m' =>
         return (Cps.APP { func = m', args = k :: ns' }))))
 
   and translCase env m xs n c =
@@ -118,9 +118,9 @@ structure TranslCps = struct
         raise (Fail "translLet: VALREC")
 
   and translPrim env p ms k =
-    translExpSeq env ms [] (fn ts => k (Cps.PRIM { prim = p, args = ts}))
+    translExpSeq env (rev ms) [] (fn ts => k (Cps.PRIM { prim = p, args = ts}))
 
-  and translExpSeq env [] ts body = body (rev ts)
+  and translExpSeq env [] ts body = body ts
     | translExpSeq env (m :: ms) ts body =
         translExp env m (CABS (fn m' =>
           translExpSeq env ms (m' :: ts) body))
