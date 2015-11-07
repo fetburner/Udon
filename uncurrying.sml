@@ -1,47 +1,97 @@
+
 structure Uncurrying = struct
+  local
+    open Type
+  in
+    (* collect arguments of function type *)
+    fun collectArgs args (FUN (t1s, t2)) =
+          collectArgs (rev t1s @ args) t2
+      | collectArgs args (VAR (ref (LINK t))) =
+          collectArgs args t
+      | collectArgs args t = (rev args, t)
+    val collectArgs = collectArgs []
+
+    fun uncurryingType (t as VAR (ref (UNBOUND _))) = t
+      | uncurryingType (VAR (ref (LINK t))) = uncurryingType t
+      | uncurryingType (t as META _) = t
+      | uncurryingType (t as INT) = t
+      | uncurryingType (t as BOOL) = t
+      | uncurryingType (t as FUN _) =
+          (case collectArgs t of
+             (args, result) =>
+               FUN (map uncurryingType args, uncurryingType result))
+      | uncurryingType (TUPLE ts) = TUPLE (map uncurryingType ts)
+  end
+
+  fun uncurryingId (x, t) = (x, uncurryingType t)
+
   local
     open TypedSyntax
   in
-    fun uncurryingExp env (m as (CONST _, _)) = m
-      | uncurryingExp env (VAR x, t) =
-          (* need renaming *)
-          (VAR (getOpt (Env.find (env, x), x)), t)
-      | uncurryingExp env (IF (m, n1, n2), t) =
-          (IF (uncurryingExp env m, uncurryingExp env n1, uncurryingExp env n2), t)
-      | uncurryingExp env (m as (ABS _, _)) =
-          uncurryingAbs [] env m
-      | uncurryingExp env (APP (m, ns), t) =
-          (APP (uncurryingExp env m, map (uncurryingExp env) ns), t)
-      | uncurryingExp env (LET (dec, m), t) =
-          (LET (map (uncurryingDec env) dec, uncurryingExp env m), t)
-      | uncurryingExp env (TUPLE ms, t) =
-          (TUPLE (map (uncurryingExp env) ms), t)
-      | uncurryingExp env (CASE (m, xs, n), t) =
-          (CASE (uncurryingExp env m, xs, uncurryingExp env n), t)
-      | uncurryingExp env (PRIM (p, ms), t) =
-          (PRIM (p, map (uncurryingExp env) ms), t)
-    and uncurryingDec env (VAL (x, m)) =
-          VAL (x, uncurryingExp env m)
-      | uncurryingDec env (VALREC (x, m)) =
-          VALREC (x, uncurryingExp env m)
+    (* collect arguments of lambda abstractions *)
+    fun collectAbs args (ABS (xs, m), _) =
+          collectAbs (rev xs @ args) m
+      | collectAbs args m = (rev args, m)
+    val collectAbs = fn ABS (xs, m) => collectAbs xs m
 
-    (* convert fn x_1 => ... fn x_n => m *)
-    (* into fn x_1 => ... fn x_n => (fn (y_1, ... , y_n) => m) (x_1, ... , x_n) *)
-    and uncurryingAbs xs env (ABS (ys, m), t) =
-          (ABS (ys, uncurryingAbs (rev ys @ xs) env m), t)
-      | uncurryingAbs xs env (m as (_, t)) =
+    (* collect arguments of applications *)
+    fun collectApps args (APP (m, ns), _) =
+          collectApps (rev ns @ args) m
+      | collectApps args m = (m, args)
+    val collectApps = fn APP (m, ns) => collectApps (rev ns) m
+
+    fun uncurryingExp (m, t) =
+      (uncurryingExpBody m, uncurryingType t)
+
+    and uncurryingExpBody (m as CONST _) = m
+      | uncurryingExpBody (m as VAR _) = m
+      | uncurryingExpBody (IF (m, n1, n2)) =
+          IF (uncurryingExp m, uncurryingExp n1, uncurryingExp n2)
+      | uncurryingExpBody (m as ABS _) =
           let
-            val xs' = rev xs
-            val xs'' = map (fn (x, t) => (VAR x, t)) xs'
-            val (bindings, ys) = ListPair.unzip (map (fn (x, t) =>
-              let val y = Id.gensym "y" in
-                ((x, y), (y, t))
-              end) xs')
-            val m' = uncurryingExp (Env.insertList (env, bindings)) m
+            val (xs, n) = collectAbs m
+            val xs' = map uncurryingId xs
+            val n' = uncurryingExp n
+            val (t1s, t2) = collectArgs (expTypeOf n')
+            val ys = map (fn t => (Id.gensym "dummy", t)) t1s
+            val ys' = map (fn (y, t) => (VAR y, t)) ys
           in
-            (APP ((ABS (ys, m'), Type.FUN (idSeqTypeOf xs', t)), xs''), t)
+            if null t1s then
+              ABS (xs', n')
+            else
+              (* eta expansion *)
+              ABS (xs' @ ys, (APP (n', ys'), t2))
           end
+      | uncurryingExpBody (m as APP _) =
+          let
+            val (m, ns) = collectApps m
+            val m' = uncurryingExp m
+            val ns' = map uncurryingExp ns
+            val (t1s, t2) = collectArgs (expTypeOf m')
+            val t1s' = List.drop (t1s, length ns')
+            val xs = map (fn t => (Id.gensym "dummy", t)) t1s'
+            val xs' = map (fn (x, t) => (VAR x, t)) xs
+          in
+            if null xs then
+              APP (m', ns')
+            else
+              (* eta expansion *)
+              ABS (xs, (APP (m', ns' @ xs'), t2))
+          end
+      | uncurryingExpBody (LET (dec, m)) =
+          LET (map uncurryingDec dec, uncurryingExp m)
+      | uncurryingExpBody (TUPLE ms) =
+          TUPLE (map uncurryingExp ms)
+      | uncurryingExpBody (CASE (m, xs, n)) =
+          CASE (uncurryingExp m, map uncurryingId xs, uncurryingExp n)
+      | uncurryingExpBody (PRIM (p, ms)) =
+          PRIM (p, map uncurryingExp ms)
+    and uncurryingDec (VAL (x, m)) =
+          VAL (uncurryingId x, uncurryingExp m)
+      | uncurryingDec (VALREC (f, m)) =
+          VALREC (uncurryingId f, uncurryingExp m)
 
-    val uncurrying = uncurryingExp Env.empty
+    val uncurrying = uncurryingExp
   end
 end
+
