@@ -3,17 +3,17 @@ structure TranslCps = struct
   exception Fail of string
 
   (* main translation function *)
-  fun transl (E (CONST c, _)) (Cps.CVAR k) =
+  fun transl (CONST c, _) (Cps.CVAR k) =
         Cps.APP_TAIL (k, Cps.CONST c)
-    | transl (E (CONST c, _)) (Cps.CABS (x, e)) =
+    | transl (CONST c, _) (Cps.CABS (x, e)) =
         Cps.LET ((x, Cps.VAL (Cps.CONST c)), e)
-    | transl (E (VAR x, _)) (Cps.CVAR k) =
+    | transl (VAR x, _) (Cps.CVAR k) =
         Cps.APP_TAIL (k, Cps.VAR x)
-    | transl (E (VAR x, _)) (Cps.CABS (y, e)) =
+    | transl (VAR x, _) (Cps.CABS (y, e)) =
         Cps.LET ((y, Cps.VAL (Cps.VAR x)), e)
-    | transl (E (IF (m, n1, n2), _)) (c as (Cps.CVAR _)) =
+    | transl (IF (m, n1, n2), _) (c as (Cps.CVAR _)) =
         translIf (m, n1, n2) c
-    | transl (E (IF (m, n1, n2), _)) (c as (Cps.CABS _)) =
+    | transl (IF (m, n1, n2), _) (c as (Cps.CABS _)) =
         let
           val k = Id.gensym "if_label"
         in
@@ -21,35 +21,35 @@ structure TranslCps = struct
             ((k, c),
              translIf (m, n1, n2) (Cps.CVAR k))
         end
-    | transl (E (ABS (xs, m), _)) (Cps.CVAR k) =
+    | transl (ABS (xs, m), _) (Cps.CVAR k) =
         let
           val x = Id.gensym "fn"
         in
           translAbs x false (map #1 xs) m (Cps.APP_TAIL (k, Cps.VAR x))
         end
-    | transl (E (ABS (xs, m), _)) (Cps.CABS (x, e)) =
+    | transl (ABS (xs, m), _) (Cps.CABS (x, e)) =
         translAbs x false (map #1 xs) m e
-    | transl (E (APP (m, ns), _)) c =
+    | transl (APP (m, ns), _) c =
         translApp m ns c
-    | transl (E (LET (d, m), _)) c =
+    | transl (LET (d, m), _) c =
         translLet d m c
-    | transl (E (TUPLE ms, _)) (Cps.CVAR k) =
+    | transl (TUPLE ms, _) (Cps.CVAR k) =
         let
           val x = Id.gensym "tuple"
         in
           translPrim Prim.TUPLE ms x (Cps.APP_TAIL (k, Cps.VAR x))
         end
-    | transl (E (TUPLE ms, _)) (Cps.CABS (x, e)) =
+    | transl (TUPLE ms, _) (Cps.CABS (x, e)) =
         translPrim Prim.TUPLE ms x e
-    | transl (E (CASE (m, xs, n), _)) c =
+    | transl (CASE (m, xs, n), _) c =
         translCase m xs n c
-    | transl (E (PRIM (p, ms), _)) (Cps.CVAR k) =
+    | transl (PRIM (p, ms), _) (Cps.CVAR k) =
         let
           val x = Id.gensym "tuple"
         in
           translPrim p ms x (Cps.APP_TAIL (k, Cps.VAR x))
         end
-    | transl (E (PRIM (p, ms), _)) (Cps.CABS (x, e)) =
+    | transl (PRIM (p, ms), _) (Cps.CABS (x, e)) =
         translPrim p ms x e
 
   and translIf (m, n1, n2) c =
@@ -93,7 +93,7 @@ structure TranslCps = struct
       case dec of
          VAL (f, exp') =>
            transl exp' (Cps.CABS (#1 f, translLet decs exp cont))
-       | VALREC (f, E (ABS (ids, body), _)) =>
+       | VALREC (f, (ABS (ids, body), _)) =>
          let
            val ids = map #1 ids
          in
