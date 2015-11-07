@@ -9,11 +9,20 @@ structure TypedSyntax = struct
   (* return types of typed value identifiers *)
   val idSeqTypeOf = map idTypeOf
 
+  (* polymorphic typed value identifier *)
+  type polyId = Id.t * Type.scheme
+
+  fun polyIdToString (x, t) = Id.toString x ^ " : " ^ Type.schemeToString t
+  (* return type scheme of polymorphic typed value identifier *)
+  val polyIdTypeOf : polyId -> Type.scheme = #2
+
+  fun idToPolyId (x, t) = (x, Type.toTypeScheme t)
+
   datatype exp_body =
     (* constant *)
       CONST of Const.t
-    (* variable *)
-    | VAR of Id.t
+    (* x [T_1] ... [T_n] *)
+    | VAR of Id.t * Type.t list
     (* if M then N_1 else N_2 *)
     | IF of exp * exp * exp
     (* fn (x_1 : T_1, ... , x_n : T_n) => M *)
@@ -29,17 +38,22 @@ structure TypedSyntax = struct
     (* op (+) (M_1, ..., M_n) *)
     | PRIM of Prim.t * exp list
   and dec =
-    (* val x : T = M *)
-      VAL of id * exp
-    (* val rec f : T = M *)
-    | VALREC of id * exp
+    (* val x : /\X_1 ... X_n. T = M *)
+      VAL of polyId * exp
+    (* val rec f : /\X_1 ... X_n. T = M *)
+    | VALREC of polyId * exp
   (* e : T *)
   withtype exp = exp_body * Type.t
 
   fun expToString (e, t) =
     "(" ^ expBodyToString e ^ " : " ^ Type.toString t ^ ")"
   and expBodyToString (CONST c) = Const.toString c
-    | expBodyToString (VAR x) = Id.toString x
+    | expBodyToString (VAR (x, ts)) =
+        "("
+        ^ Id.toString x
+        ^ PP.seqToString (fn t =>
+            " [" ^ Type.toString t ^ "]", "", "", "", "") ts
+        ^ ")"
     | expBodyToString (IF (m, n1, n2)) =
         "(if "
         ^ expToString m
@@ -85,15 +99,15 @@ structure TypedSyntax = struct
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
   and decToString dec = PP.seqToString (fn
       VAL (x, m) =>
-      "val "
-      ^ idToString x
-      ^ " = "
-      ^ expToString m
+        "val "
+        ^ polyIdToString x
+        ^ " = "
+        ^ expToString m
     | VALREC (f, m) =>
-      "val rec "
-      ^ idToString f
-      ^ " = "
-      ^ expToString m, "", "; ", "", "") dec
+        "val rec "
+        ^ polyIdToString f
+        ^ " = "
+        ^ expToString m, "", "; ", "", "") dec
 
   (* return type of typed expression *)
   val expTypeOf : exp -> Type.t = #2

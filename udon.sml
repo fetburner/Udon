@@ -6,25 +6,13 @@ structure UdonLex = UdonLexFun(structure Tokens = UdonLrVals.Tokens)
 structure UdonParser = Join(structure LrParser = LrParser
                            structure ParserData = UdonLrVals.ParserData
                            structure Lex = UdonLex)
-structure Inlining = InliningFn (struct val threshold = 10 end)
 
 fun foldn f 0 x = x
   | foldn f n x = foldn f (n - 1) (f x)
 
 fun exec exp stat =
   ((print
-    (* o Js.progToString *)
-    (* o Js.transl *)
-    (* o (fn e => (print (Cps.expToString e); print "\n\n"; e)) *)
-    o Cps.expToString
-    o foldn
-        (DeadCodeElim.deadCodeElim
-          o Hoisting.hoisting
-          o ConstFold.constFold Env.empty
-          o Alpha.alphaConv Env.empty) 10
-    o (fn exp => TranslCps.transl exp (Cps.CVAR (Id.gensym "HALT")))
-    o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
-    o Uncurrying.uncurrying
+    o TypedSyntax.expToString
     o Typing.typing 0 Injection.typeInfo
     o Infixing.infixing Injection.infixInfo) exp
    handle

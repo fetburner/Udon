@@ -10,6 +10,11 @@ structure Type = struct
     | TUPLE of t list
   and tvar = UNBOUND of Id.t * int | LINK of t
 
+  (* type scheme *)
+  type scheme = Id.t list * t
+
+  fun toTypeScheme t = ([], t)
+
   fun toString (VAR (ref (LINK t))) = toString t
     | toString (VAR (ref (UNBOUND (x, l)))) =
         "'_" ^ Id.toString x ^ "_l" ^ Int.toString l
@@ -20,43 +25,54 @@ structure Type = struct
     | toString (TUPLE ts) = "(" ^ seqToString ts ^ ")"
   and seqToString ts = PP.seqToString (toString, "unit", " * ", "", "") ts
 
+  fun schemeToString ([], t) = toString t
+    | schemeToString (xs, t) =
+        "forall "
+        ^ PP.seqToString (fn x => Id.toString x, "", " ", "", "") xs
+        ^ ", "
+        ^ toString t
+
   (* generate type variable in current level *)
   fun genvar l = VAR (ref (UNBOUND (Id.gensym "a", l)))
 
-  (* instantiate quantified type variable in current level *)
-  fun inst l t =
-    let
-      val env = ref Env.empty
-      fun instBody (t as (VAR (ref (UNBOUND _)))) = t
-        | instBody (VAR (ref (LINK t))) = instBody t
-        | instBody (META x) =
-            (case Env.find (!env, x) of
-                  SOME t => t
-                | NONE =>
-                    let
-                      val t = genvar l
-                    in
-                      env := Env.insert (!env, x, t);
-                      t
-                    end)
-        | instBody (t as INT) = t
-        | instBody (t as BOOL) = t
-        | instBody (FUN (t1s, t2)) = FUN (map instBody t1s, instBody t2)
-        | instBody (TUPLE ts) = TUPLE (map instBody ts)
-    in
-      instBody t
+  fun subst env (t as (VAR (ref (UNBOUND _)))) = t
+    | subst env (VAR (ref (LINK t))) = subst env t
+    | subst env (t as META x) =
+        (case Env.find (env, x) of
+              SOME t' => t'
+            | NONE => t)
+    | subst env (t as INT) = t
+    | subst env (t as BOOL) = t
+    | subst env (FUN (t1s, t2)) = FUN (map (subst env) t1s, subst env t2)
+    | subst env (TUPLE ts) = TUPLE (map (subst env) ts)
+
+  (* instantiate type scheme in current level *)
+  fun inst l (xs, t) =
+    let val xs' = map (fn x => (x, genvar l)) xs in
+      (subst (Env.fromList xs') t, map #2 xs')
     end
 
   (* generalize type variable in current level *)
-  fun generalize l (VAR (ref (LINK t))) = generalize l t
-    | generalize l (t as (VAR (ref (UNBOUND (x, l'))))) =
-        if l < l' then META x else t
-    | generalize l (t as (META _)) = t
-    | generalize l (t as INT) = t
-    | generalize l (t as BOOL) = t
-    | generalize l (FUN (t1s, t2)) =
-        FUN (map (generalize l) t1s, generalize l t2)
-    | generalize l (TUPLE ts) = TUPLE (map (generalize l) ts)
+  fun generalize l t =
+    let
+      val bounds = ref IdSet.empty
+      fun generalizeBody (VAR (ref (LINK t))) =
+            generalizeBody t
+        | generalizeBody (t as (VAR (ref (UNBOUND (x, l'))))) =
+            if l < l' then
+              (bounds := IdSet.add (!bounds, x);
+               META x)
+            else t
+        | generalizeBody (t as (META _)) = t
+        | generalizeBody (t as INT) = t
+        | generalizeBody (t as BOOL) = t
+        | generalizeBody (FUN (t1s, t2)) =
+            FUN (map generalizeBody t1s, generalizeBody t2)
+        | generalizeBody (TUPLE ts) = TUPLE (map generalizeBody ts)
+      val t' = generalizeBody t
+    in
+      (IdSet.listItems (!bounds), t')
+    end
 
   (* exception that arises when type checker fail to unify types *)
   exception Unify of t * t

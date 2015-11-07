@@ -8,9 +8,9 @@ structure Typing : TYPING = struct
     fun typingExp l env (Syntax.CONST c) =
           (CONST c, Const.typeOf c)
       | typingExp l env (Syntax.VAR x) =
-          (case Env.find (env, x) of
+          (case Option.map (Type.inst l) (Env.find (env, x)) of
                 NONE => raise (UnboundVar x)
-              | SOME t => (VAR x, Type.inst l t))
+              | SOME (t, ts) => (VAR (x, ts), t))
       | typingExp l env (Syntax.IF (m, n1, n2)) =
           let
             val m' = typingExp l env m
@@ -24,7 +24,7 @@ structure Typing : TYPING = struct
       | typingExp l env (Syntax.ABS (x, m)) =
           let
             val x' = (x, Type.genvar l)
-            val m' = typingExp l (Env.insertList (env, [x'])) m
+            val m' = typingExp l (Env.insertList (env, [idToPolyId x'])) m
           in
             (ABS ([x'], m'), Type.FUN ([idTypeOf x'], expTypeOf m'))
           end
@@ -49,7 +49,7 @@ structure Typing : TYPING = struct
           let
             val m' = typingExp l env m
             val xs' = map (fn x => (x, Type.genvar l)) xs
-            val n' = typingExp l (Env.insertList (env, xs')) n
+            val n' = typingExp l (Env.insertList (env, map idToPolyId xs')) n
           in
             Type.unify (expTypeOf m', Type.TUPLE (idSeqTypeOf xs'));
             (CASE (m', xs', n'), expTypeOf n')
@@ -79,7 +79,7 @@ structure Typing : TYPING = struct
       | typingLet l dec' env0 env (Syntax.VALREC (f, m) :: dec) body =
           let
             val f' = (f, Type.genvar (l + 1))
-            val m' = typingExp (l + 1) (Env.insertList (env, [f'])) m
+            val m' = typingExp (l + 1) (Env.insertList (env, [idToPolyId f'])) m
           in
             Type.unify (idTypeOf f', expTypeOf m');
             let
