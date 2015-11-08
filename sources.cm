@@ -21,10 +21,13 @@ Group is
   infixing.sig
   cps.sml
   translCps.sml
+  alpha.sml
   beta.sml
   hoisting.sml
   eta.sml
   constFold.sml
+  inlining.sml
+  deadCodeElim.sml
   injection.sml
   udon.grm
   udon.lex

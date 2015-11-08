@@ -76,6 +76,7 @@ structure Cps = struct
         ^ " else "
         ^ expToString e2
 
+
   fun freeVarOfTerm (CONST _) = IdSet.empty
     | freeVarOfTerm (VAR x) = IdSet.singleton x
     | freeVarOfTerm (ABS ((x, k), e)) = IdSet.subtractList (freeVarOfExp e, [x, k])
@@ -90,4 +91,17 @@ structure Cps = struct
         IdSet.subtract (IdSet.union (freeVarOfTerm t, freeVarOfExp e), x)
     | freeVarOfExp (IF (x, e1, e2)) =
         IdSet.add (IdSet.union (freeVarOfExp e1, freeVarOfExp e2), x)
+
+
+  fun sizeOfTerm (CONST _) = 1
+    | sizeOfTerm (VAR _) = 1
+    | sizeOfTerm (ABS ((_, _), e)) = 1 + sizeOfExp e
+    | sizeOfTerm (ABS_CONT (_, e)) = 1 + sizeOfExp e
+    | sizeOfTerm (PRIM _) = 1
+
+  and sizeOfExp (APP _) = 1
+    | sizeOfExp (APP_TAIL _) = 1
+    | sizeOfExp (LET ((_, t), e)) = 1 + sizeOfTerm t + sizeOfExp e
+    | sizeOfExp (LET_REC ((_, t), e)) = 1 + sizeOfTerm t + sizeOfExp e
+    | sizeOfExp (IF (_, e1, e2)) = 1 + sizeOfExp e1 + sizeOfExp e2
 end
