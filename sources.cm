@@ -21,6 +21,7 @@ Group is
   infixing.sig
   cps.sml
   translCps.sml
+  beta.sml
   injection.sml
   udon.grm
   udon.lex
