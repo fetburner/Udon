@@ -22,6 +22,7 @@ Group is
   cps.sml
   translCps.sml
   beta.sml
+  hoisting.sml
   eta.sml
   injection.sml
   udon.grm
