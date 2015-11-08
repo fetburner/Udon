@@ -12,7 +12,12 @@ fun foldn f 0 x = x
 
 fun exec exp stat =
   ((print
-    o TypedSyntax.expToString
+    o Cps.expToString
+    o (fn exp => TranslCps.transl exp (fn t =>
+        let val x = Id.gensym "x" in
+          Cps.LET ((x, t), Cps.APP_TAIL (Id.gensym "HALT", x))
+        end))
+    o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
     o Typing.typing 0 Injection.typeInfo
     o Infixing.infixing Injection.infixInfo) exp
    handle

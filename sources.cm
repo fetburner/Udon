@@ -19,6 +19,8 @@ Group is
   infixer.sml
   infixing.sml
   infixing.sig
+  cps.sml
+  translCps.sml
   injection.sml
   udon.grm
   udon.lex

@@ -3,77 +3,56 @@ structure TranslCps = struct
   exception Fail of string
 
   (* main translation function *)
-  fun transl (CONST c, _) (Cps.CVAR k) =
-        Cps.APP_TAIL (k, Cps.CONST c)
-    | transl (CONST c, _) (Cps.CABS (x, e)) =
-        Cps.LET ((x, Cps.VAL (Cps.CONST c)), e)
-    | transl (VAR x, _) (Cps.CVAR k) =
-        Cps.APP_TAIL (k, Cps.VAR x)
-    | transl (VAR x, _) (Cps.CABS (y, e)) =
-        Cps.LET ((y, Cps.VAL (Cps.VAR x)), e)
-    | transl (IF (m, n1, n2), _) (c as (Cps.CVAR _)) =
-        translIf (m, n1, n2) c
-    | transl (IF (m, n1, n2), _) (c as (Cps.CABS _)) =
-        let
-          val k = Id.gensym "if_label"
-        in
-          Cps.LET_CONT
-            ((k, c),
-             translIf (m, n1, n2) (Cps.CVAR k))
+  fun transl (CONST c, _) cont =
+        cont (Cps.CONST c)
+    | transl (VAR (x, _), _) cont =
+        cont (Cps.VAR x)
+    | transl (IF (m, n1, n2), _) cont =
+        let val x = Id.gensym "if_cond" in
+          transl m (fn m' =>
+            Cps.LET ((x, m'),
+              Cps.IF (x,
+                transl n1 cont,
+                transl n2 cont)))
         end
-    | transl (ABS (xs, m), _) (Cps.CVAR k) =
+    | transl (ABS ((x, _), m), _) cont =
         let
-          val x = Id.gensym "fn"
+          val k = Id.gensym "k"
+          val y = Id.gensym "x"
         in
-          translAbs x false (map #1 xs) m (Cps.APP_TAIL (k, Cps.VAR x))
+          cont (Cps.ABS ((x, k),
+            transl m (fn m' =>
+              Cps.LET ((y, m'), Cps.APP_TAIL (k, y)))))
         end
-    | transl (ABS (xs, m), _) (Cps.CABS (x, e)) =
-        translAbs x false (map #1 xs) m e
-    | transl (APP (m, ns), _) c =
-        translApp m ns c
-    | transl (LET (d, m), _) c =
-        translLet d m c
-    | transl (TUPLE ms, _) (Cps.CVAR k) =
+    | transl (APP (m, n), _) cont =
         let
-          val x = Id.gensym "tuple"
+          val f = Id.gensym "fn"
+          val arg = Id.gensym "arg"
+          val k = Id.gensym "k"
+          val x = Id.gensym "x"
         in
-          translPrim Prim.TUPLE ms x (Cps.APP_TAIL (k, Cps.VAR x))
+          Cps.LET ((k, Cps.ABS_CONT (x, cont (Cps.VAR x))),
+          transl m (fn m' =>
+            Cps.LET ((f, m'),
+            transl n (fn n' =>
+              Cps.LET ((arg, n'),
+              Cps.APP ((f, arg), k))))))
         end
-    | transl (TUPLE ms, _) (Cps.CABS (x, e)) =
-        translPrim Prim.TUPLE ms x e
-    | transl (CASE (m, xs, n), _) c =
-        translCase m xs n c
-    | transl (PRIM (p, ms), _) (Cps.CVAR k) =
-        let
-          val x = Id.gensym "tuple"
-        in
-          translPrim p ms x (Cps.APP_TAIL (k, Cps.VAR x))
-        end
-    | transl (PRIM (p, ms), _) (Cps.CABS (x, e)) =
-        translPrim p ms x e
-
-  and translIf (m, n1, n2) c =
-      let
-        val x = Id.gensym "if_cond"
-      in
-        transl m
-          (Cps.CABS
-            (x,
-             Cps.IF
-               (Cps.VAR x,
-                transl n1 c,
-                transl n2 c)))
-      end
-
-  and translAbs name recflag ids body e =
-      let
-        val k = Id.gensym "k"
-        val binding =
-          (name, Cps.ABS ((ids, k), transl body (Cps.CVAR k)))
-      in
-        if recflag then Cps.LET_REC (binding, e)
-        else Cps.LET (binding, e)
-      end
+    | transl (LET (d, m), _) cont =
+        foldr (fn
+            (VAL ((x, _), n), m') =>
+              transl n (fn n' =>
+                Cps.LET ((x, n'), m'))
+          | (VALREC ((x, _), n), m') =>
+              transl n (fn n' =>
+                Cps.LET_REC ((x, n'), m')))
+          (transl m cont) d
+    | transl (TUPLE ms, _) cont =
+        translPrim Prim.TUPLE ms cont
+    | transl (CASE (m, xs, n), _) cont =
+        translCase m xs n cont
+    | transl (PRIM (p, ms), _) cont =
+        translPrim p ms cont
 
   and translCase e1 ids e2 cont =
       let
@@ -81,49 +60,23 @@ structure TranslCps = struct
         fun loop exp cont n [] = transl exp cont
           | loop exp cont n (id :: ids) =
               Cps.LET
-                ((id, Cps.PRIM (Prim.TUPLE_GET n, [Cps.VAR newId])),
+                ((id, Cps.PRIM (Prim.TUPLE_GET n, [newId])),
                  loop exp cont (n + 1) ids)
           val exp = loop e2 cont 1 (map #1 ids)
       in
-        transl e1 (Cps.CABS (newId, exp))
+        transl e1 (fn e1' =>
+          Cps.LET ((newId, e1'), exp))
       end
 
-  and translLet [] exp cont = transl exp cont
-    | translLet (dec::decs) exp cont =
-      case dec of
-         VAL (f, exp') =>
-           transl exp' (Cps.CABS (#1 f, translLet decs exp cont))
-       | VALREC (f, (ABS (ids, body), _)) =>
-         let
-           val ids = map #1 ids
-         in
-           translAbs (#1 f) true ids body (translLet decs exp cont)
-         end
-       | VALREC _ => raise (Fail "translLet: VALREC")
-
-  and translApp funcExp argsExp cont =
-    let
-      val funcId = Id.gensym "fn"
-    in
-      transl funcExp
-        (Cps.CABS
-          (funcId,
-           translExpSeq argsExp [] (fn ids =>
-             Cps.APP (funcId, (ids, cont)))))
-    end
-
-  and translPrim p ms x e =
+  and translPrim p ms cont =
     translExpSeq ms [] (fn ids =>
-      Cps.LET
-        ((x, Cps.PRIM (p, ids)), e))
+      cont (Cps.PRIM (p, ids)))
 
   and translExpSeq [] ids body = body (rev ids)
     | translExpSeq (e :: exps) ids body =
-        let
-          val id = Id.gensym "e"
-        in
-          transl e
-            (Cps.CABS (id, translExpSeq exps (Cps.VAR id :: ids) body))
+        let val id = Id.gensym "e" in
+          transl e (fn e' =>
+            Cps.LET ((id, e'), translExpSeq exps (id :: ids) body))
         end
 
 end
