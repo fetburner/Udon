@@ -28,6 +28,7 @@ Group is
   constFold.sml
   inlining.sml
   deadCodeElim.sml
+  sinking.sml
   injection.sml
   udon.grm
   udon.lex
