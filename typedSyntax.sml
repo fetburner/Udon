@@ -25,10 +25,10 @@ structure TypedSyntax = struct
     | VAR of Id.t * Type.t list
     (* if M then N_1 else N_2 *)
     | IF of exp * exp * exp
-    (* fn (x_1 : T_1, ... , x_n : T_n) => M *)
-    | ABS of id list * exp
-    (* M (N_1, ... , N_n) *)
-    | APP of exp * exp list
+    (* fn (x : T) => M *)
+    | ABS of id * exp
+    (* M N *)
+    | APP of exp * exp
     (* let d in N end *)
     | LET of dec list * exp
     (* (M_1, ... , M_n) *)
@@ -62,17 +62,17 @@ structure TypedSyntax = struct
         ^ " else "
         ^ expToString n2
         ^ ")"
-    | expBodyToString (ABS (xs, m)) =
+    | expBodyToString (ABS (x, m)) =
         "(fn "
-        ^ idSeqToString xs
+        ^ idToString x
         ^ " => " 
         ^ expToString m
         ^ ")"
-    | expBodyToString (APP (m, ns)) =
+    | expBodyToString (APP (m, n)) =
         "("
         ^ expToString m
         ^ " "
-        ^ expSeqToString ns
+        ^ expToString n
         ^ ")"
     | expBodyToString (LET (d, m)) =
         "let "

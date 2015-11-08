@@ -26,7 +26,7 @@ structure Typing : TYPING = struct
             val x' = (x, Type.genvar l)
             val m' = typingExp l (Env.insertList (env, [idToPolyId x'])) m
           in
-            (ABS ([x'], m'), Type.FUN ([idTypeOf x'], expTypeOf m'))
+            (ABS (x', m'), Type.FUN (idTypeOf x', expTypeOf m'))
           end
       | typingExp l env (Syntax.APP (m, n)) =
           let
@@ -34,8 +34,8 @@ structure Typing : TYPING = struct
             val n' = typingExp l env n
             val t12 = Type.genvar l
           in
-            Type.unify (expTypeOf m', Type.FUN ([expTypeOf n'], t12));
-            (APP (m', [n']), t12)
+            Type.unify (expTypeOf m', Type.FUN (expTypeOf n', t12));
+            (APP (m', n'), t12)
           end
       | typingExp l env (Syntax.LET (dec, m)) =
           typingLet l [] env env dec m
@@ -55,12 +55,9 @@ structure Typing : TYPING = struct
             (CASE (m', xs', n'), expTypeOf n')
           end
       | typingExp l env (Syntax.PRIM (p, ms)) =
-          let
-            val t = Type.genvar l
-            val ms' = map (typingExp l env) ms
-          in
-            Type.unify (Prim.typeOf p, Type.FUN (expSeqTypeOf ms', t));
-            (PRIM (p, ms'), t)
+          let val ms' = map (typingExp l env) ms in
+            ListPair.appEq Type.unify (Prim.dom p, expSeqTypeOf ms');
+            (PRIM (p, ms'), Prim.cod p)
           end
     and typingLet l dec' env0 env [] body =
           let 

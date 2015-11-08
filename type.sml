@@ -6,7 +6,7 @@ structure Type = struct
     | META of Id.t
     | INT
     | BOOL
-    | FUN of t list * t
+    | FUN of t * t
     | TUPLE of t list
   and tvar = UNBOUND of Id.t * int | LINK of t
 
@@ -21,7 +21,7 @@ structure Type = struct
     | toString (META x) = "'" ^ Id.toString x
     | toString INT = "int"
     | toString BOOL = "bool"
-    | toString (FUN (ts, t)) = "(" ^ seqToString ts ^ " -> " ^ toString t ^ ")"
+    | toString (FUN (t1, t2)) = "(" ^ toString t1 ^ " -> " ^ toString t2 ^ ")"
     | toString (TUPLE ts) = "(" ^ seqToString ts ^ ")"
   and seqToString ts = PP.seqToString (toString, "unit", " * ", "", "") ts
 
@@ -43,7 +43,7 @@ structure Type = struct
             | NONE => t)
     | subst env (t as INT) = t
     | subst env (t as BOOL) = t
-    | subst env (FUN (t1s, t2)) = FUN (map (subst env) t1s, subst env t2)
+    | subst env (FUN (t1, t2)) = FUN (subst env t1, subst env t2)
     | subst env (TUPLE ts) = TUPLE (map (subst env) ts)
 
   (* instantiate type scheme in current level *)
@@ -66,8 +66,8 @@ structure Type = struct
         | generalizeBody (t as (META _)) = t
         | generalizeBody (t as INT) = t
         | generalizeBody (t as BOOL) = t
-        | generalizeBody (FUN (t1s, t2)) =
-            FUN (map generalizeBody t1s, generalizeBody t2)
+        | generalizeBody (FUN (t1, t2)) =
+            FUN (generalizeBody t1, generalizeBody t2)
         | generalizeBody (TUPLE ts) = TUPLE (map generalizeBody ts)
       val t' = generalizeBody t
     in
@@ -79,8 +79,8 @@ structure Type = struct
 
   local
     (* occur check *)
-    fun occur r1 (FUN (t21s, t22)) =
-          List.exists (occur r1) t21s orelse occur r1 t22
+    fun occur r1 (FUN (t21, t22)) =
+          occur r1 t21 orelse occur r1 t22
       | occur r1 (VAR (r2 as (ref (UNBOUND _)))) = r1 = r2
       | occur r1 (VAR (r2 as (ref (LINK t2)))) =
           r1 = r2 orelse occur r1 t2
@@ -92,8 +92,8 @@ structure Type = struct
     (* unifier *)
     fun unify (INT, INT) = ()
       | unify (BOOL, BOOL) = ()
-      | unify (FUN (t11s, t12), FUN (t21s, t22)) =
-          (ListPair.appEq unify (t11s, t21s);
+      | unify (FUN (t11, t12), FUN (t21, t22)) =
+          (unify (t11, t21);
            unify (t12, t22))
       | unify (TUPLE t1s, TUPLE t2s) =
            ListPair.appEq unify (t1s, t2s)

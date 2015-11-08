@@ -24,10 +24,10 @@ structure Prim = struct
     | priority TUPLE = NONE
     | priority (TUPLE_GET n) = NONE
 
-  fun typeOf (PLUS | MINUS | TIMES) =
-        Type.FUN ([Type.INT, Type.INT], Type.INT)
-    | typeOf LE =
-        Type.FUN ([Type.INT, Type.INT], Type.BOOL)
+  fun dom (PLUS | MINUS | TIMES | LE) = [Type.INT, Type.INT]
+
+  fun cod (PLUS | MINUS | TIMES) = Type.INT
+    | cod LE = Type.BOOL
 
   val primitives =
     map (fn p => (Id.gensym (toString p), p))
