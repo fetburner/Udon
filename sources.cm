@@ -24,6 +24,7 @@ Group is
   beta.sml
   hoisting.sml
   eta.sml
+  constFold.sml
   injection.sml
   udon.grm
   udon.lex

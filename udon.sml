@@ -15,6 +15,7 @@ fun exec exp stat =
     o Cps.expToString
     o foldn
         (Eta.etaReduction
+         o ConstFold.constFold Env.empty
          o Hoisting.hoisting
          o Beta.betaReduction Env.empty) 10
     o (fn exp => TranslCps.transl exp (fn t =>
