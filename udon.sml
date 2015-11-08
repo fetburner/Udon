@@ -13,7 +13,9 @@ fun foldn f 0 x = x
 fun exec exp stat =
   ((print
     o Cps.expToString
-    o Beta.betaReduction Env.empty
+    o foldn
+        (Eta.etaReduction
+         o Beta.betaReduction Env.empty) 10
     o (fn exp => TranslCps.transl exp (fn t =>
         let val x = Id.gensym "x" in
           Cps.LET ((x, t), Cps.APP_TAIL (Id.gensym "HALT", x))
