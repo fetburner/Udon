@@ -14,10 +14,10 @@ fun exec exp stat =
   ((print
     o Cps.expToString
     o foldn
-        (Eta.etaReduction
-         o ConstFold.constFold Env.empty
-         o Hoisting.hoisting
+        (ConstFold.constFold Env.empty
          o Beta.betaReduction Env.empty) 10
+    o Eta.etaReduction
+    o Hoisting.hoisting
     o (fn exp => TranslCps.transl exp (fn t =>
         let val x = Id.gensym "x" in
           Cps.LET ((x, t), Cps.APP_TAIL (Id.gensym "HALT", x))
