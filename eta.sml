@@ -1,11 +1,11 @@
 structure Eta = struct
   open Cps
 
-  exception EtaReduction
-
   (* eta reductions *)
   fun etaReductionTerm (t as CONST _) = t
     | etaReductionTerm (t as VAR _) = t
+    | etaReductionTerm (t as ABS ((x, k), APP ((f, x'), k'))) =
+        if x = x' andalso k = k' then VAR f else t
     | etaReductionTerm (t as ABS_CONT (x, APP_TAIL (k', x'))) =
         if x = x' then VAR k' else t
     | etaReductionTerm (ABS ((x, k), e)) = ABS ((x, k), etaReductionExp e)

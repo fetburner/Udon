@@ -18,11 +18,11 @@ fun exec exp stat =
         (DeadCodeElim.deadCodeElim
          o ConstFold.constFold Env.empty
          o Inlining.inlining Env.empty
+         o Eta.etaReduction
          o Beta.betaReduction Env.empty) 10
     o (fn e => (print (Cps.expToString e ^ "\n\n"); e))
     o Sinking.sinking
     o Hoisting.hoisting
-    o Eta.etaReduction
     o Beta.betaReduction Env.empty
     o (fn exp => TranslCps.transl exp (fn t =>
         let val x = Id.gensym "x" in
