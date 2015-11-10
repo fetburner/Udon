@@ -32,10 +32,10 @@ structure TranslCps = struct
           val x = Id.gensym "x"
         in
           Cps.LET ((k, Cps.ABS_CONT (x, cont (Cps.VAR x))),
-          transl m (fn m' =>
-            Cps.LET ((f, m'),
-            transl n (fn n' =>
-              Cps.LET ((arg, n'),
+          transl n (fn n' =>
+            Cps.LET ((arg, n'),
+            transl m (fn m' =>
+              Cps.LET ((f, m'),
               Cps.APP ((f, arg), k))))))
         end
     | transl (LET (d, m), _) cont =
@@ -75,8 +75,8 @@ structure TranslCps = struct
   and translExpSeq [] ids body = body (rev ids)
     | translExpSeq (e :: exps) ids body =
         let val id = Id.gensym "e" in
-          transl e (fn e' =>
-            Cps.LET ((id, e'), translExpSeq exps (id :: ids) body))
+          translExpSeq exps (id :: ids) (fn ids =>
+            transl e (fn e' =>
+              Cps.LET ((id, e'), body ids)))
         end
-
 end
