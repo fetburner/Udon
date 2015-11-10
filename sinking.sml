@@ -15,7 +15,7 @@ structure Sinking = struct
           val (fv, cont) = sinkingExpAux e
         in
           if IdSet.member (fv, x) then
-            (IdSet.union (fv, IdSet.subtract (freeVarOfTerm t', x)),
+            (IdSet.union (fv, freeVarOfBinding (x, t')),
              fn c => LET_REC ((x, t'), cont c))
           else
             (fv, fn c => cont (fn e => c (LET_REC ((x, t'), e))))

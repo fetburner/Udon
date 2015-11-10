@@ -15,7 +15,7 @@ structure Hoisting = struct
     and collectBindingOfExp env k (APP _) = NONE
       | collectBindingOfExp env k (APP_TAIL _) = NONE
       | collectBindingOfExp env k (LET_REC ((x, t), m)) =
-          if isEvaluable env (IdSet.subtract (freeVarOfTerm t, x)) then
+          if isEvaluable env (freeVarOfBinding (x, t)) then
             SOME (fn m' => LET_REC ((x, t), m'), k m)
           else
             (case collectBindingOfTerm env (fn t' => k (LET_REC ((x, t'), m))) t of

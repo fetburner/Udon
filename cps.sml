@@ -18,9 +18,10 @@ structure Cps = struct
     (* x y *)
     | APP_TAIL of Id.t * Id.t
     (* let val rec f = t in e end *)
-    | LET_REC of (Id.t * term) * exp
+    | LET_REC of binding * exp
     (* if x then e1 else e2 *)
     | IF of Id.t * exp * exp
+  withtype binding = Id.t * term
 
   fun termToString (CONST c) = Const.toString c
     | termToString (VAR x) = Id.toString x
@@ -40,6 +41,7 @@ structure Cps = struct
         Prim.toString p
         ^ " "
         ^ Id.seqToString xs
+
   and expToString (APP ((x, y), k)) =
         Id.toString x
         ^ " "
@@ -50,11 +52,9 @@ structure Cps = struct
         Id.toString x
         ^ " "
         ^ Id.toString y
-    | expToString (LET_REC ((x, t), e)) =
+    | expToString (LET_REC (binding, e)) =
         "let val rec "
-        ^ Id.toString x
-        ^ " = "
-        ^ termToString t
+        ^ bindingToString binding
         ^ " in "
         ^ expToString e
         ^ " end"
@@ -65,6 +65,8 @@ structure Cps = struct
         ^ expToString e1
         ^ " else "
         ^ expToString e2
+
+  and bindingToString (x, t) = Id.toString x ^ " = " ^ termToString t
 
 
   fun freeVarOfTerm (CONST _) = IdSet.empty
@@ -80,6 +82,7 @@ structure Cps = struct
     | freeVarOfExp (IF (x, e1, e2)) =
         IdSet.add (IdSet.union (freeVarOfExp e1, freeVarOfExp e2), x)
 
+  and freeVarOfBinding (x, t) = IdSet.subtract (freeVarOfTerm t, x)
 
   fun sizeOfTerm (CONST _) = 1
     | sizeOfTerm (VAR _) = 1
