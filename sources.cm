@@ -19,6 +19,7 @@ Group is
   infixer.sml
   infixing.sml
   infixing.sig
+  uncurrying.sml
   cps.sml
   translCps.sml
   alpha.sml

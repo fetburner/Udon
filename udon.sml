@@ -6,7 +6,7 @@ structure UdonLex = UdonLexFun(structure Tokens = UdonLrVals.Tokens)
 structure UdonParser = Join(structure LrParser = LrParser
                            structure ParserData = UdonLrVals.ParserData
                            structure Lex = UdonLex)
-structure Inlining = InliningFun (val threshold = 100)
+structure Inlining = InliningFun (val threshold = 10)
 
 fun foldn f 0 x = x
   | foldn f n x = foldn f (n - 1) (f x)
@@ -19,6 +19,7 @@ fun exec exp stat =
          o ConstFold.constFold Env.empty
          o Inlining.inlining Env.empty
          o Beta.betaReduction Env.empty) 10
+    o (fn e => (print (Cps.expToString e ^ "\n\n"); e))
     o Sinking.sinking
     o Hoisting.hoisting
     o Eta.etaReduction
@@ -28,6 +29,7 @@ fun exec exp stat =
           Cps.LET ((x, t), Cps.APP_TAIL (Id.gensym "HALT", x))
         end))
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
+    o Uncurrying.uncurrying
     o Typing.typing 0 Injection.typeInfo
     o Infixing.infixing Injection.infixInfo) exp
    handle
