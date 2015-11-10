@@ -18,7 +18,7 @@ structure TypedSyntax = struct
 
   fun idToPolyId (x, t) = (x, Type.toTypeScheme t)
 
-  datatype exp_body =
+  datatype exp =
     (* constant *)
       CONST of Const.t
     (* x [T_1] ... [T_n] *)
@@ -42,19 +42,15 @@ structure TypedSyntax = struct
       VAL of polyId * exp
     (* val rec f : /\X_1 ... X_n. T = M *)
     | VALREC of polyId * exp
-  (* e : T *)
-  withtype exp = exp_body * Type.t
 
-  fun expToString (e, t) =
-    "(" ^ expBodyToString e ^ " : " ^ Type.toString t ^ ")"
-  and expBodyToString (CONST c) = Const.toString c
-    | expBodyToString (VAR (x, ts)) =
+  fun expToString (CONST c) = Const.toString c
+    | expToString (VAR (x, ts)) =
         "("
         ^ Id.toString x
         ^ PP.seqToString (fn t =>
             " [" ^ Type.toString t ^ "]", "", "", "", "") ts
         ^ ")"
-    | expBodyToString (IF (m, n1, n2)) =
+    | expToString (IF (m, n1, n2)) =
         "(if "
         ^ expToString m
         ^ " then "
@@ -62,27 +58,27 @@ structure TypedSyntax = struct
         ^ " else "
         ^ expToString n2
         ^ ")"
-    | expBodyToString (ABS (x, m)) =
+    | expToString (ABS (x, m)) =
         "(fn "
         ^ idToString x
         ^ " => " 
         ^ expToString m
         ^ ")"
-    | expBodyToString (APP (m, n)) =
+    | expToString (APP (m, n)) =
         "("
         ^ expToString m
         ^ " "
         ^ expToString n
         ^ ")"
-    | expBodyToString (LET (d, m)) =
+    | expToString (LET (d, m)) =
         "let "
         ^ decToString d
         ^ " in "
         ^ expToString m
         ^ " end"
-    | expBodyToString (TUPLE ms) =
+    | expToString (TUPLE ms) =
         expSeqToString ms
-    | expBodyToString (CASE (m, xs, n)) =
+    | expToString (CASE (m, xs, n)) =
         "(case "
         ^ expToString m
         ^ " of "
@@ -90,7 +86,7 @@ structure TypedSyntax = struct
         ^ " => "
         ^ expToString n
         ^ ")"
-    | expBodyToString (PRIM (p, ms)) =
+    | expToString (PRIM (p, ms)) =
         "(op "
         ^ Prim.toString p
         ^ " "
@@ -108,9 +104,4 @@ structure TypedSyntax = struct
         ^ polyIdToString f
         ^ " = "
         ^ expToString m, "", "; ", "", "") dec
-
-  (* return type of typed expression *)
-  val expTypeOf : exp -> Type.t = #2
-  (* return types of typed expressions *)
-  val expSeqTypeOf = map expTypeOf
 end

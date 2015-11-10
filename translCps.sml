@@ -3,11 +3,11 @@ structure TranslCps = struct
   exception Fail of string
 
   (* main translation function *)
-  fun transl (CONST c, _) cont =
+  fun transl (CONST c) cont =
         cont (Cps.CONST c)
-    | transl (VAR (x, _), _) cont =
+    | transl (VAR (x, _)) cont =
         cont (Cps.VAR x)
-    | transl (IF (m, n1, n2), _) cont =
+    | transl (IF (m, n1, n2)) cont =
         let val x = Id.gensym "if_cond" in
           transl m (fn m' =>
             Cps.LET ((x, m'),
@@ -15,7 +15,7 @@ structure TranslCps = struct
                 transl n1 cont,
                 transl n2 cont)))
         end
-    | transl (ABS ((x, _), m), _) cont =
+    | transl (ABS ((x, _), m)) cont =
         let
           val k = Id.gensym "k"
           val y = Id.gensym "x"
@@ -24,7 +24,7 @@ structure TranslCps = struct
             transl m (fn m' =>
               Cps.LET ((y, m'), Cps.APP_TAIL (k, y)))))
         end
-    | transl (APP (m, n), _) cont =
+    | transl (APP (m, n)) cont =
         let
           val f = Id.gensym "fn"
           val arg = Id.gensym "arg"
@@ -38,7 +38,7 @@ structure TranslCps = struct
               Cps.LET ((f, m'),
               Cps.APP ((f, arg), k))))))
         end
-    | transl (LET (d, m), _) cont =
+    | transl (LET (d, m)) cont =
         foldr (fn
             (VAL ((x, _), n), m') =>
               transl n (fn n' =>
@@ -47,11 +47,11 @@ structure TranslCps = struct
               transl n (fn n' =>
                 Cps.LET_REC ((x, n'), m')))
           (transl m cont) d
-    | transl (TUPLE ms, _) cont =
+    | transl (TUPLE ms) cont =
         translPrim Prim.TUPLE ms cont
-    | transl (CASE (m, xs, n), _) cont =
+    | transl (CASE (m, xs, n)) cont =
         translCase m xs n cont
-    | transl (PRIM (p, ms), _) cont =
+    | transl (PRIM (p, ms)) cont =
         translPrim p ms cont
 
   and translCase e1 ids e2 cont =
