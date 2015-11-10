@@ -18,14 +18,12 @@ structure Beta = struct
         APP ((betaReductionId env x, betaReductionId env y), betaReductionId env k)
     | betaReductionExp env (APP_TAIL (x, y)) =
         APP_TAIL (betaReductionId env x, betaReductionId env y)
-    | betaReductionExp env (LET ((x, t), e)) =
+    | betaReductionExp env (LET_REC ((x, t), e)) =
         (case betaReductionTerm env t of
              VAR (y) =>
                betaReductionExp (Env.insert (env, x, y)) e
            | t' =>
-               LET ((x, t'), betaReductionExp env e))
-    | betaReductionExp env (LET_REC ((x, t), e)) =
-        LET_REC ((x, betaReductionTerm env t), betaReductionExp env e)
+               LET_REC ((x, t'), betaReductionExp env e))
     | betaReductionExp env (IF (x, e1, e2)) =
         IF (betaReductionId env x, betaReductionExp env e1, betaReductionExp env e2)
 

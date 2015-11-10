@@ -21,19 +21,12 @@ functor InliningFun (P : sig val threshold : int end) = struct
               SOME (ABS_CONT (y', e)) =>
                 Alpha.alphaConversion (Env.fromList [(y', y)]) e
             | _ => t)
-    | inliningExp env (LET ((x, t), e)) =
-        let val t' = inliningTerm env t in
-          if sizeOfTerm t' <= threshold then
-            LET ((x, t'), inliningExp (Env.insert (env, x, t')) e)
-          else
-            LET ((x, t'), inliningExp env e)
-        end
     | inliningExp env (LET_REC ((x, t), e)) =
         let val t' = inliningTerm env t in
           if sizeOfTerm t' <= threshold then
-            LET ((x, t'), inliningExp (Env.insert (env, x, t')) e)
+            LET_REC ((x, t'), inliningExp (Env.insert (env, x, t')) e)
           else
-            LET ((x, t'), inliningExp env e)
+            LET_REC ((x, t'), inliningExp env e)
         end
     | inliningExp env (IF (x, e1, e2)) =
         IF (x, inliningExp env e1, inliningExp env e2)

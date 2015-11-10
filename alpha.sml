@@ -29,13 +29,6 @@ structure Alpha = struct
         APP ((alphaConversionId env x, alphaConversionId env y), alphaConversionId env k)
     | alphaConversionExp env (APP_TAIL (x, y)) =
         APP_TAIL (alphaConversionId env x, alphaConversionId env y)
-    | alphaConversionExp env (LET ((x, t), e)) =
-        let
-          val x' = Id.gensym "x"
-          val env' = Env.insert (env, x, x')
-        in
-          LET ((x', alphaConversionTerm env t), alphaConversionExp env' e)
-        end
     | alphaConversionExp env (LET_REC ((x, t), e)) =
         let
           val x' = Id.gensym "x"

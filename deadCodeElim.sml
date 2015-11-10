@@ -10,12 +10,6 @@ structure DeadCodeElim = struct
 
   and deadCodeElimExp (e as APP _) = e
     | deadCodeElimExp (e as APP_TAIL _) = e
-    | deadCodeElimExp (LET ((x, t), e)) =
-        let val e' = deadCodeElimExp e in
-          if IdSet.member (freeVarOfExp e', x) then
-            LET ((x, deadCodeElimTerm t), e')
-          else e'
-        end
     | deadCodeElimExp (LET_REC ((x, t), e)) =
         let val e' = deadCodeElimExp e in
           if IdSet.member (freeVarOfExp e', x) then

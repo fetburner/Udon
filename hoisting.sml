@@ -14,14 +14,6 @@ structure Hoisting = struct
 
     and collectBindingOfExp env k (APP _) = NONE
       | collectBindingOfExp env k (APP_TAIL _) = NONE
-      | collectBindingOfExp env k (LET ((x, t), m)) =
-          if isEvaluable env (freeVarOfTerm t) then
-            SOME (fn m' => LET ((x, t), m'), k m)
-          else
-            (case collectBindingOfTerm env (fn t' => k (LET ((x, t'), m))) t of
-                  result as SOME _ => result
-                | NONE =>
-                    collectBindingOfExp env (fn m' => k (LET ((x, t), m'))) m)
       | collectBindingOfExp env k (LET_REC ((x, t), m)) =
           if isEvaluable env (IdSet.subtract (freeVarOfTerm t, x)) then
             SOME (fn m' => LET_REC ((x, t), m'), k m)
@@ -39,12 +31,6 @@ structure Hoisting = struct
 
     fun hoistingExp env (m as APP _) = m
       | hoistingExp env (m as APP_TAIL _) = m
-      | hoistingExp env (LET ((x, t), e)) =
-          (case collectBindingOfTerm env (fn x => x) t of
-                NONE =>
-                  LET ((x, hoistingTerm env t), hoistingExp (IdSet.add (env, x)) e)
-              | SOME (binding, t') =>
-                  hoistingExp env (binding (LET ((x, t'), e))))
       | hoistingExp env (LET_REC ((x, t), e)) =
           let val env' = IdSet.add (env, x) in
             case collectBindingOfTerm env (fn x => x) t of

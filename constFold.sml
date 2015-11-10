@@ -47,13 +47,6 @@ structure ConstFold = struct
 
   and constFoldExp env (e as APP _) = e
     | constFoldExp env (e as APP_TAIL _) = e
-    | constFoldExp env (LET ((x, t), e)) =
-        let
-          val t' = constFoldTerm env t
-          val e' = constFoldExp (Env.insert (env, x, t')) e
-        in
-          LET ((x, t'), e')
-        end
     | constFoldExp env (LET_REC ((x, t), e)) =
         let
           val t' = constFoldTerm env t

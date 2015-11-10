@@ -9,16 +9,6 @@ structure Sinking = struct
 
   and sinkingExpAux (e as APP _) = (IdSet.empty, fn c => c e)
     | sinkingExpAux (e as APP_TAIL _) = (IdSet.empty, fn c => c e)
-    | sinkingExpAux (LET ((x, t), e)) =
-        let
-          val t' = sinkingTerm t
-          val (fv, cont) = sinkingExpAux e
-        in
-          if IdSet.member (fv, x) then
-            (IdSet.union (fv, freeVarOfTerm t'), fn c => LET ((x, t'), cont c))
-          else
-            (fv, fn c => cont (fn e => c (LET ((x, t'), e))))
-        end
     | sinkingExpAux (LET_REC ((x, t), e)) =
         let
           val t' = sinkingTerm t

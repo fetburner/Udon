@@ -6,7 +6,7 @@ structure UdonLex = UdonLexFun(structure Tokens = UdonLrVals.Tokens)
 structure UdonParser = Join(structure LrParser = LrParser
                            structure ParserData = UdonLrVals.ParserData
                            structure Lex = UdonLex)
-structure Inlining = InliningFun (val threshold = 10)
+structure Inlining = InliningFun (val threshold = 100)
 
 fun foldn f 0 x = x
   | foldn f n x = foldn f (n - 1) (f x)
@@ -26,7 +26,7 @@ fun exec exp stat =
     o Beta.betaReduction Env.empty
     o (fn exp => TranslCps.transl exp (fn t =>
         let val x = Id.gensym "x" in
-          Cps.LET ((x, t), Cps.APP_TAIL (Id.gensym "HALT", x))
+          Cps.LET_REC ((x, t), Cps.APP_TAIL (Id.gensym "HALT", x))
         end))
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
     o Uncurrying.uncurrying

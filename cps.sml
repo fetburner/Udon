@@ -17,8 +17,6 @@ structure Cps = struct
       APP of (Id.t * Id.t) * Id.t
     (* x y *)
     | APP_TAIL of Id.t * Id.t
-    (* let val x = t in e end *)
-    | LET of (Id.t * term) * exp
     (* let val rec f = t in e end *)
     | LET_REC of (Id.t * term) * exp
     (* if x then e1 else e2 *)
@@ -52,14 +50,6 @@ structure Cps = struct
         Id.toString x
         ^ " "
         ^ Id.toString y
-    | expToString (LET ((x, t), e)) =
-        "let val "
-        ^ Id.toString x
-        ^ " = "
-        ^ termToString t
-        ^ " in "
-        ^ expToString e
-        ^ " end"
     | expToString (LET_REC ((x, t), e)) =
         "let val rec "
         ^ Id.toString x
@@ -85,8 +75,6 @@ structure Cps = struct
 
   and freeVarOfExp (APP ((x, y), k)) = IdSet.fromList [x, y, k]
     | freeVarOfExp (APP_TAIL (x, y)) = IdSet.fromList [x, y]
-    | freeVarOfExp (LET ((x, t), e)) =
-        IdSet.union (freeVarOfTerm t, IdSet.subtract (freeVarOfExp e, x))
     | freeVarOfExp (LET_REC ((x, t), e)) =
         IdSet.subtract (IdSet.union (freeVarOfTerm t, freeVarOfExp e), x)
     | freeVarOfExp (IF (x, e1, e2)) =
@@ -101,7 +89,6 @@ structure Cps = struct
 
   and sizeOfExp (APP _) = 1
     | sizeOfExp (APP_TAIL _) = 1
-    | sizeOfExp (LET ((_, t), e)) = 1 + sizeOfTerm t + sizeOfExp e
     | sizeOfExp (LET_REC ((_, t), e)) = 1 + sizeOfTerm t + sizeOfExp e
     | sizeOfExp (IF (_, e1, e2)) = 1 + sizeOfExp e1 + sizeOfExp e2
 end

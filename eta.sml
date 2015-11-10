@@ -14,8 +14,6 @@ structure Eta = struct
 
   and etaReductionExp (t as APP _) = t
     | etaReductionExp (t as APP_TAIL _) = t
-    | etaReductionExp (LET ((x, t), e)) =
-        LET ((x, etaReductionTerm t), etaReductionExp e)
     | etaReductionExp (LET_REC ((x, t), e)) =
         LET_REC ((x, etaReductionTerm t), etaReductionExp e)
     | etaReductionExp (IF (x, e1, e2)) =
