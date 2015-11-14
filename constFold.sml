@@ -24,16 +24,30 @@ structure ConstFold = struct
     | termConstFold env (ABS_CONT (x, e)) =
         ABS_CONT (x, expConstFold env e)
     | termConstFold env (t as PRIM (Prim.PLUS, xs)) =
-        (case map (findInt env) xs of
-              [ SOME m, SOME n ] => CONST (Const.INT (m + n))
+        (case map (fn x => (x, Env.find (env, x))) xs of
+              [ (_, SOME (CONST (Const.INT m))), (_, SOME (CONST (Const.INT n))) ] =>
+                CONST (Const.INT (m + n))
+            | [ (_, SOME (CONST (Const.INT 0))), (n, _) ] => VAR n
+            | [ (m, _), (_, SOME (CONST (Const.INT 0))) ] => VAR m
             | _ => t)
     | termConstFold env (t as PRIM (Prim.MINUS, xs)) =
-        (case map (findInt env) xs of
-              [ SOME m, SOME n ] => CONST (Const.INT (m - n))
+        (case map (fn x => (x, Env.find (env, x))) xs of
+              [ (_, SOME (CONST (Const.INT m))), (_, SOME (CONST (Const.INT n))) ] =>
+                CONST (Const.INT (m - n))
+            | [ (m, _), (_, SOME (CONST (Const.INT 0))) ] => VAR m
             | _ => t)
     | termConstFold env (t as PRIM (Prim.TIMES, xs)) =
-        (case map (findInt env) xs of
-              [ SOME m, SOME n ] => CONST (Const.INT (m * n))
+        (case map (fn x => (x, Env.find (env, x))) xs of
+              [ (_, SOME (CONST (Const.INT m))), (_, SOME (CONST (Const.INT n))) ] =>
+                CONST (Const.INT (m * n))
+            | [ (_, SOME (CONST (Const.INT 0))), _ ] => CONST (Const.INT 0)
+            | [ (_, SOME (CONST (Const.INT 1))), (n, _) ] => VAR n
+            | [ (_, SOME (CONST (Const.INT 2))), (n, _) ] =>
+                PRIM (Prim.PLUS, [n, n])
+            | [ _, (_, SOME (CONST (Const.INT 0))) ] => CONST (Const.INT 0)
+            | [ (m, _), (_, SOME (CONST (Const.INT 1))) ] => VAR m
+            | [ (m, _), (_, SOME (CONST (Const.INT 2))) ] =>
+                PRIM (Prim.PLUS, [m, m])
             | _ => t)
     | termConstFold env (t as PRIM (Prim.LE, xs)) =
         (case map (findInt env) xs of
