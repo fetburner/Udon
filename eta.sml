@@ -2,23 +2,23 @@ structure Eta = struct
   open Cps
 
   (* eta reductions *)
-  fun etaReductionTerm (t as CONST _) = t
-    | etaReductionTerm (t as VAR _) = t
-    | etaReductionTerm (t as ABS ((x, k), APP ((f, x'), k'))) =
+  fun termEtaReduction (t as CONST _) = t
+    | termEtaReduction (t as VAR _) = t
+    | termEtaReduction (t as ABS ((x, k), APP ((f, x'), k'))) =
         if x = x' andalso k = k' then VAR f else t
-    | etaReductionTerm (t as ABS_CONT (x, APP_TAIL (k', x'))) =
+    | termEtaReduction (t as ABS_CONT (x, APP_TAIL (k', x'))) =
         if x = x' then VAR k' else t
-    | etaReductionTerm (ABS ((x, k), e)) = ABS ((x, k), etaReductionExp e)
-    | etaReductionTerm (ABS_CONT (x, e)) = ABS_CONT (x, etaReductionExp e)
-    | etaReductionTerm (t as PRIM _) = t
+    | termEtaReduction (ABS ((x, k), e)) = ABS ((x, k), expEtaReduction e)
+    | termEtaReduction (ABS_CONT (x, e)) = ABS_CONT (x, expEtaReduction e)
+    | termEtaReduction (t as PRIM _) = t
 
-  and etaReductionExp (t as APP _) = t
-    | etaReductionExp (t as APP_TAIL _) = t
-    | etaReductionExp (LET_REC (bindings, e)) =
+  and expEtaReduction (t as APP _) = t
+    | expEtaReduction (t as APP_TAIL _) = t
+    | expEtaReduction (LET_REC (bindings, e)) =
         LET_REC
-          (map (fn (x, t) => (x, etaReductionTerm t)) bindings, etaReductionExp e)
-    | etaReductionExp (IF (x, e1, e2)) =
-        IF (x, etaReductionExp e1, etaReductionExp e2)
+          (map (fn (x, t) => (x, termEtaReduction t)) bindings, expEtaReduction e)
+    | expEtaReduction (IF (x, e1, e2)) =
+        IF (x, expEtaReduction e1, expEtaReduction e2)
 
-  val etaReduction = etaReductionExp
+  val etaReduction = expEtaReduction
 end

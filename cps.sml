@@ -69,38 +69,37 @@ structure Cps = struct
   and bindingToString (x, t) = Id.toString x ^ " = " ^ termToString t
 
 
-  fun freeVarOfTerm (CONST _) = IdSet.empty
-    | freeVarOfTerm (VAR x) = IdSet.singleton x
-    | freeVarOfTerm (ABS ((x, k), e)) = IdSet.subtractList (freeVarOfExp e, [x, k])
-    | freeVarOfTerm (ABS_CONT (x, e)) = IdSet.subtract (freeVarOfExp e, x)
-    | freeVarOfTerm (PRIM (p, xs)) = IdSet.fromList xs
+  fun termFreeVar (CONST _) = IdSet.empty
+    | termFreeVar (VAR x) = IdSet.singleton x
+    | termFreeVar (ABS ((x, k), e)) = IdSet.subtractList (expFreeVar e, [x, k])
+    | termFreeVar (ABS_CONT (x, e)) = IdSet.subtract (expFreeVar e, x)
+    | termFreeVar (PRIM (p, xs)) = IdSet.fromList xs
 
-  and freeVarOfExp (APP ((x, y), k)) = IdSet.fromList [x, y, k]
-    | freeVarOfExp (APP_TAIL (x, y)) = IdSet.fromList [x, y]
-    | freeVarOfExp (LET_REC (bindings, e)) =
+  and expFreeVar (APP ((x, y), k)) = IdSet.fromList [x, y, k]
+    | expFreeVar (APP_TAIL (x, y)) = IdSet.fromList [x, y]
+    | expFreeVar (LET_REC (bindings, e)) =
         let val (xs, ts) = ListPair.unzip bindings in
-          IdSet.subtractList (foldl IdSet.union (freeVarOfExp e)
-            (map freeVarOfTerm ts), xs)
+          IdSet.subtractList (foldl IdSet.union (expFreeVar e)
+            (map termFreeVar ts), xs)
         end
-    | freeVarOfExp (IF (x, e1, e2)) =
-        IdSet.add (IdSet.union (freeVarOfExp e1, freeVarOfExp e2), x)
+    | expFreeVar (IF (x, e1, e2)) =
+        IdSet.add (IdSet.union (expFreeVar e1, expFreeVar e2), x)
 
-  and freeVarOfBinding (x, t) = IdSet.subtract (freeVarOfTerm t, x)
-  and freeVarOfBindings bindings =
+  and bindingsFreeVar bindings =
         let val (xs, ts) = ListPair.unzip bindings in
           IdSet.subtractList (foldl IdSet.union IdSet.empty
-            (map freeVarOfTerm ts), xs)
+            (map termFreeVar ts), xs)
         end
 
-  fun sizeOfTerm (CONST _) = 1
-    | sizeOfTerm (VAR _) = 1
-    | sizeOfTerm (ABS ((_, _), e)) = 1 + sizeOfExp e
-    | sizeOfTerm (ABS_CONT (_, e)) = 1 + sizeOfExp e
-    | sizeOfTerm (PRIM _) = 1
+  fun termSize (CONST _) = 1
+    | termSize (VAR _) = 1
+    | termSize (ABS ((_, _), e)) = 1 + expSize e
+    | termSize (ABS_CONT (_, e)) = 1 + expSize e
+    | termSize (PRIM _) = 1
 
-  and sizeOfExp (APP _) = 1
-    | sizeOfExp (APP_TAIL _) = 1
-    | sizeOfExp (LET_REC (bindings, e)) =
-        1 + foldl op+ 0 (map (sizeOfTerm o #2) bindings) + sizeOfExp e
-    | sizeOfExp (IF (_, e1, e2)) = 1 + sizeOfExp e1 + sizeOfExp e2
+  and expSize (APP _) = 1
+    | expSize (APP_TAIL _) = 1
+    | expSize (LET_REC (bindings, e)) =
+        1 + foldl op+ 0 (map (termSize o #2) bindings) + expSize e
+    | expSize (IF (_, e1, e2)) = 1 + expSize e1 + expSize e2
 end

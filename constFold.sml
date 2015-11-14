@@ -17,51 +17,51 @@ structure ConstFold = struct
          SOME (PRIM (Prim.TUPLE, xs)) => SOME xs
        | _ => NONE
 
-  fun constFoldTerm env (t as CONST _) = t
-    | constFoldTerm env (t as VAR _) = t
-    | constFoldTerm env (ABS ((x, k), e)) =
-        ABS ((x, k), constFoldExp env e)
-    | constFoldTerm env (ABS_CONT (x, e)) =
-        ABS_CONT (x, constFoldExp env e)
-    | constFoldTerm env (t as PRIM (Prim.PLUS, xs)) =
+  fun termConstFold env (t as CONST _) = t
+    | termConstFold env (t as VAR _) = t
+    | termConstFold env (ABS ((x, k), e)) =
+        ABS ((x, k), expConstFold env e)
+    | termConstFold env (ABS_CONT (x, e)) =
+        ABS_CONT (x, expConstFold env e)
+    | termConstFold env (t as PRIM (Prim.PLUS, xs)) =
         (case map (findInt env) xs of
               [ SOME m, SOME n ] => CONST (Const.INT (m + n))
             | _ => t)
-    | constFoldTerm env (t as PRIM (Prim.MINUS, xs)) =
+    | termConstFold env (t as PRIM (Prim.MINUS, xs)) =
         (case map (findInt env) xs of
               [ SOME m, SOME n ] => CONST (Const.INT (m - n))
             | _ => t)
-    | constFoldTerm env (t as PRIM (Prim.TIMES, xs)) =
+    | termConstFold env (t as PRIM (Prim.TIMES, xs)) =
         (case map (findInt env) xs of
               [ SOME m, SOME n ] => CONST (Const.INT (m * n))
             | _ => t)
-    | constFoldTerm env (t as PRIM (Prim.LE, xs)) =
+    | termConstFold env (t as PRIM (Prim.LE, xs)) =
         (case map (findInt env) xs of
               [ SOME m, SOME n ] => CONST (Const.BOOL (m <= n))
             | _ => t)
-    | constFoldTerm env (t as PRIM (Prim.TUPLE_GET n, [x])) =
+    | termConstFold env (t as PRIM (Prim.TUPLE_GET n, [x])) =
         getOpt
           (Option.map (fn xs => VAR (List.nth (xs, n - 1)))
             (findTuple env x), t)
-    | constFoldTerm env (t as PRIM _) = t
+    | termConstFold env (t as PRIM _) = t
 
-  and constFoldExp env (e as APP _) = e
-    | constFoldExp env (e as APP_TAIL _) = e
-    | constFoldExp env (LET_REC (bindings, e)) =
+  and expConstFold env (e as APP _) = e
+    | expConstFold env (e as APP_TAIL _) = e
+    | expConstFold env (LET_REC (bindings, e)) =
         let
-          val bindings' = map (fn (x, t) => (x, constFoldTerm env t)) bindings
-          val e' = constFoldExp (Env.insertList (env, bindings')) e
+          val bindings' = map (fn (x, t) => (x, termConstFold env t)) bindings
+          val e' = expConstFold (Env.insertList (env, bindings')) e
         in
           LET_REC (bindings', e')
         end
-    | constFoldExp env (IF (x, e1, e2)) =
+    | expConstFold env (IF (x, e1, e2)) =
         (case findBool env x of
-              SOME true => constFoldExp env e1
-            | SOME false => constFoldExp env e2
+              SOME true => expConstFold env e1
+            | SOME false => expConstFold env e2
             | NONE =>
                 IF (x,
-                  constFoldExp (Env.insert (env, x, CONST (Const.BOOL true))) e1,
-                  constFoldExp (Env.insert (env, x, CONST (Const.BOOL false))) e2))
+                  expConstFold (Env.insert (env, x, CONST (Const.BOOL true))) e1,
+                  expConstFold (Env.insert (env, x, CONST (Const.BOOL false))) e2))
 
-  val constFold = constFoldExp
+  val constFold = expConstFold
 end
