@@ -29,12 +29,15 @@ structure Alpha = struct
         APP ((alphaConversionId env x, alphaConversionId env y), alphaConversionId env k)
     | alphaConversionExp env (APP_TAIL (x, y)) =
         APP_TAIL (alphaConversionId env x, alphaConversionId env y)
-    | alphaConversionExp env (LET_REC ((x, t), e)) =
+    | alphaConversionExp env (LET_REC (bindings, e)) =
         let
           val x' = Id.gensym "x"
-          val env' = Env.insert (env, x, x')
+          val bindings' = map (fn x => (x, Id.gensym "x")) bindings
+          val env' = Env.insertList (env, map (fn ((x, _), x') => (x, x')) bindings')
         in
-          LET_REC ((x', alphaConversionTerm env' t), alphaConversionExp env' e)
+          LET_REC
+            (map (fn ((_, t), x') => (x', alphaConversionTerm env' t)) bindings',
+             alphaConversionExp env' e)
         end
     | alphaConversionExp env (IF (x, e1, e2)) =
         IF (alphaConversionId env x, alphaConversionExp env e1, alphaConversionExp env e2)

@@ -18,14 +18,23 @@ structure Beta = struct
         APP ((betaReductionId env x, betaReductionId env y), betaReductionId env k)
     | betaReductionExp env (APP_TAIL (x, y)) =
         APP_TAIL (betaReductionId env x, betaReductionId env y)
-    | betaReductionExp env (LET_REC ((x, t), e)) =
-        (case betaReductionTerm env t of
-             VAR (y) =>
-               betaReductionExp (Env.insert (env, x, y)) e
-           | t' =>
-               LET_REC ((x, t'), betaReductionExp env e))
+    | betaReductionExp env (LET_REC (bindings, e)) =
+        let
+          val bindings' =
+            map (fn (x, t) => (x, betaReductionTerm env t)) bindings
+          val env' =
+            Env.insertList
+              (env,
+               List.mapPartial
+                 (fn (x, VAR y) => SOME (x, y) | _ => NONE) bindings')
+        in
+          LET_REC (bindings', betaReductionExp env' e)
+        end
     | betaReductionExp env (IF (x, e1, e2)) =
-        IF (betaReductionId env x, betaReductionExp env e1, betaReductionExp env e2)
+        IF
+          (betaReductionId env x,
+           betaReductionExp env e1,
+           betaReductionExp env e2)
 
   val betaReduction = betaReductionExp
 end

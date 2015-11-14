@@ -9,16 +9,17 @@ structure Sinking = struct
 
   and sinkingExpAux (e as APP _) = (IdSet.empty, fn c => c e)
     | sinkingExpAux (e as APP_TAIL _) = (IdSet.empty, fn c => c e)
-    | sinkingExpAux (LET_REC ((x, t), e)) =
+    | sinkingExpAux (LET_REC (bindings, e)) =
         let
-          val t' = sinkingTerm t
+          val bindings' = map (fn (x, t) => (x, sinkingTerm t)) bindings
           val (fv, cont) = sinkingExpAux e
         in
-          if IdSet.member (fv, x) then
-            (IdSet.union (fv, freeVarOfBinding (x, t')),
-             fn c => LET_REC ((x, t'), cont c))
+          if IdSet.isEmpty (IdSet.intersection
+            (fv, IdSet.fromList (map #1 bindings'))) then
+            (fv, fn c => cont (fn e => c (LET_REC (bindings', e))))
           else
-            (fv, fn c => cont (fn e => c (LET_REC ((x, t'), e))))
+            (IdSet.union (fv, freeVarOfBindings bindings'),
+             fn c => LET_REC (bindings', cont c))
         end
     | sinkingExpAux (IF (x, e1, e2)) =
         (IdSet.singleton x,

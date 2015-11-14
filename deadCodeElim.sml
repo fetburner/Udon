@@ -10,14 +10,14 @@ structure DeadCodeElim = struct
 
   and deadCodeElimExp (e as APP _) = e
     | deadCodeElimExp (e as APP_TAIL _) = e
-    | deadCodeElimExp (LET_REC ((x, t), e)) =
+    | deadCodeElimExp (LET_REC (bindings, e)) =
         let val e' = deadCodeElimExp e in
-          if IdSet.member (freeVarOfExp e', x) then
-            LET_REC ((x, deadCodeElimTerm t), e')
-          else e'
+          if IdSet.isEmpty (IdSet.intersection (freeVarOfExp e',
+              IdSet.fromList (map #1 bindings))) then e'
+          else LET_REC (map (fn (x, t) => (x, deadCodeElimTerm t)) bindings, e')
         end
-    | deadCodeElimExp (IF (v, e1, e2)) =
-        IF (v, deadCodeElimExp e1, deadCodeElimExp e2)
+    | deadCodeElimExp (IF (x, e1, e2)) =
+        IF (x, deadCodeElimExp e1, deadCodeElimExp e2)
 
   val deadCodeElim = deadCodeElimExp
 end

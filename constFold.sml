@@ -47,12 +47,12 @@ structure ConstFold = struct
 
   and constFoldExp env (e as APP _) = e
     | constFoldExp env (e as APP_TAIL _) = e
-    | constFoldExp env (LET_REC ((x, t), e)) =
+    | constFoldExp env (LET_REC (bindings, e)) =
         let
-          val t' = constFoldTerm env t
-          val e' = constFoldExp (Env.insert (env, x, t')) e
+          val bindings' = map (fn (x, t) => (x, constFoldTerm env t)) bindings
+          val e' = constFoldExp (Env.insertList (env, bindings')) e
         in
-          LET_REC ((x, t'), e')
+          LET_REC (bindings', e')
         end
     | constFoldExp env (IF (x, e1, e2)) =
         (case findBool env x of

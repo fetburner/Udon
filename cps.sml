@@ -18,7 +18,7 @@ structure Cps = struct
     (* x y *)
     | APP_TAIL of Id.t * Id.t
     (* let val rec f = t in e end *)
-    | LET_REC of binding * exp
+    | LET_REC of binding list * exp
     (* if x then e1 else e2 *)
     | IF of Id.t * exp * exp
   withtype binding = Id.t * term
@@ -54,7 +54,7 @@ structure Cps = struct
         ^ Id.toString y
     | expToString (LET_REC (binding, e)) =
         "let val rec "
-        ^ bindingToString binding
+        ^ PP.seqToString (bindingToString, "", " and ", "", "") binding
         ^ " in "
         ^ expToString e
         ^ " end"
@@ -77,12 +77,20 @@ structure Cps = struct
 
   and freeVarOfExp (APP ((x, y), k)) = IdSet.fromList [x, y, k]
     | freeVarOfExp (APP_TAIL (x, y)) = IdSet.fromList [x, y]
-    | freeVarOfExp (LET_REC ((x, t), e)) =
-        IdSet.subtract (IdSet.union (freeVarOfTerm t, freeVarOfExp e), x)
+    | freeVarOfExp (LET_REC (bindings, e)) =
+        let val (xs, ts) = ListPair.unzip bindings in
+          IdSet.subtractList (foldl IdSet.union (freeVarOfExp e)
+            (map freeVarOfTerm ts), xs)
+        end
     | freeVarOfExp (IF (x, e1, e2)) =
         IdSet.add (IdSet.union (freeVarOfExp e1, freeVarOfExp e2), x)
 
   and freeVarOfBinding (x, t) = IdSet.subtract (freeVarOfTerm t, x)
+  and freeVarOfBindings bindings =
+        let val (xs, ts) = ListPair.unzip bindings in
+          IdSet.subtractList (foldl IdSet.union IdSet.empty
+            (map freeVarOfTerm ts), xs)
+        end
 
   fun sizeOfTerm (CONST _) = 1
     | sizeOfTerm (VAR _) = 1
@@ -92,6 +100,7 @@ structure Cps = struct
 
   and sizeOfExp (APP _) = 1
     | sizeOfExp (APP_TAIL _) = 1
-    | sizeOfExp (LET_REC ((_, t), e)) = 1 + sizeOfTerm t + sizeOfExp e
+    | sizeOfExp (LET_REC (bindings, e)) =
+        1 + foldl op+ 0 (map (sizeOfTerm o #2) bindings) + sizeOfExp e
     | sizeOfExp (IF (_, e1, e2)) = 1 + sizeOfExp e1 + sizeOfExp e2
 end
