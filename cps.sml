@@ -68,7 +68,6 @@ structure Cps = struct
 
   and bindingToString (x, t) = Id.toString x ^ " = " ^ termToString t
 
-
   fun termFreeVar (CONST _) = IdSet.empty
     | termFreeVar (VAR x) = IdSet.singleton x
     | termFreeVar (ABS ((x, k), e)) = IdSet.subtractList (expFreeVar e, [x, k])

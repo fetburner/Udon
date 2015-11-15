@@ -63,8 +63,9 @@ structure ConstFold = struct
     | expConstFold env (e as APP_TAIL _) = e
     | expConstFold env (LET_REC (bindings, e)) =
         let
-          val bindings' = map (fn (x, t) => (x, termConstFold env t)) bindings
-          val e' = expConstFold (Env.insertList (env, bindings')) e
+          val env' = Env.insertList (env, bindings)
+          val bindings' = map (fn (x, t) => (x, termConstFold env' t)) bindings
+          val e' = expConstFold env' e
         in
           LET_REC (bindings', e')
         end

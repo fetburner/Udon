@@ -20,13 +20,13 @@ structure Beta = struct
         APP_TAIL (idBetaReduction env x, idBetaReduction env y)
     | expBetaReduction env (LET_REC (bindings, e)) =
         let
-          val bindings' =
-            map (fn (x, t) => (x, termBetaReduction env t)) bindings
           val env' =
             Env.insertList
               (env,
                List.mapPartial
-                 (fn (x, VAR y) => SOME (x, y) | _ => NONE) bindings')
+                 (fn (x, VAR y) => SOME (x, idBetaReduction env y) | _ => NONE) bindings)
+          val bindings' =
+            map (fn (x, t) => (x, termBetaReduction env' t)) bindings
         in
           LET_REC (bindings', expBetaReduction env' e)
         end

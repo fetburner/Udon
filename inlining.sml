@@ -23,11 +23,11 @@ functor InliningFun (P : sig val threshold : int end) = struct
             | _ => t)
     | expInlining env (LET_REC (bindings, e)) =
         let
-          val bindings' = map (fn (x, t) => (x, termInlining env t)) bindings
           val env' = Env.insertList (env,
-            List.mapPartial (fn (x, t') =>
-              if termSize t' <= threshold then SOME (x, t')
-              else NONE) bindings')
+            List.mapPartial (fn (x, t) =>
+              if termSize t <= threshold then SOME (x, t)
+              else NONE) bindings)
+          val bindings' = map (fn (x, t) => (x, termInlining env' t)) bindings
         in
           LET_REC (bindings', expInlining env' e)
         end
