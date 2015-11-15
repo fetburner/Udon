@@ -20,9 +20,9 @@ structure TranslCps = struct
           val k = Id.gensym "k"
           val y = Id.gensym "x"
         in
-          cont (Cps.ABS ((x, k),
+          cont (Cps.ABS ([x, k],
             transl m (fn m' =>
-              Cps.LET_REC ([(y, m')], Cps.APP_TAIL (k, y)))))
+              Cps.LET_REC ([(y, m')], Cps.APP (k, [y])))))
         end
     | transl (APP (m, n)) cont =
         let
@@ -31,12 +31,12 @@ structure TranslCps = struct
           val k = Id.gensym "k"
           val x = Id.gensym "x"
         in
-          Cps.LET_REC ([(k, Cps.ABS_CONT (x, cont (Cps.VAR x)))],
+          Cps.LET_REC ([(k, Cps.ABS ([x], cont (Cps.VAR x)))],
           transl n (fn n' =>
             Cps.LET_REC ([(arg, n')],
             transl m (fn m' =>
               Cps.LET_REC ([(f, m')],
-              Cps.APP ((f, arg), k))))))
+              Cps.APP (f, [arg, k]))))))
         end
     | transl (LET (d, m)) cont =
         foldr (fn

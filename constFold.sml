@@ -19,10 +19,8 @@ structure ConstFold = struct
 
   fun termConstFold env (t as CONST _) = t
     | termConstFold env (t as VAR _) = t
-    | termConstFold env (ABS ((x, k), e)) =
-        ABS ((x, k), expConstFold env e)
-    | termConstFold env (ABS_CONT (x, e)) =
-        ABS_CONT (x, expConstFold env e)
+    | termConstFold env (ABS (xs, e)) =
+        ABS (xs, expConstFold env e)
     | termConstFold env (t as PRIM (Prim.PLUS, xs)) =
         (case map (fn x => (x, Env.find (env, x))) xs of
               [ (_, SOME (CONST (Const.INT m))), (_, SOME (CONST (Const.INT n))) ] =>
@@ -60,7 +58,6 @@ structure ConstFold = struct
     | termConstFold env (t as PRIM _) = t
 
   and expConstFold env (e as APP _) = e
-    | expConstFold env (e as APP_TAIL _) = e
     | expConstFold env (LET_REC (bindings, e)) =
         let
           val env' = Env.insertList (env, bindings)

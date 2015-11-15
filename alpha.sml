@@ -7,28 +7,18 @@ structure Alpha = struct
 
   fun termAlphaConversion env (t as CONST _) = t
     | termAlphaConversion env (VAR x) = VAR (idAlphaConversion env x)
-    | termAlphaConversion env (ABS ((x, k), e)) =
+    | termAlphaConversion env (ABS (xs, e)) =
         let
-          val x' = Id.gensym "x"
-          val k' = Id.gensym "k"
-          val env' = Env.insertList (env, [(x, x'), (k, k')])
+          val xs' = map (fn x => (x, Id.gensym "x")) xs
+          val env' = Env.insertList (env, xs')
         in
-          ABS ((x', k'), expAlphaConversion env' e)
-        end
-    | termAlphaConversion env (ABS_CONT (x, e)) =
-        let
-          val x' = Id.gensym "x"
-          val env' = Env.insert (env, x, x')
-        in
-          ABS_CONT (x', expAlphaConversion env' e)
+          ABS (map #2 xs', expAlphaConversion env' e)
         end
     | termAlphaConversion env (PRIM (p, xs)) =
         PRIM (p, map (idAlphaConversion env) xs)
 
-  and expAlphaConversion env (APP ((x, y), k)) =
-        APP ((idAlphaConversion env x, idAlphaConversion env y), idAlphaConversion env k)
-    | expAlphaConversion env (APP_TAIL (x, y)) =
-        APP_TAIL (idAlphaConversion env x, idAlphaConversion env y)
+  and expAlphaConversion env (APP (x, ys)) =
+        APP (idAlphaConversion env x, map (idAlphaConversion env) ys)
     | expAlphaConversion env (LET_REC (bindings, e)) =
         let
           val x' = Id.gensym "x"

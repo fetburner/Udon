@@ -4,12 +4,10 @@ structure DeadCodeElim = struct
   (* dead code eliminations *)
   fun termDeadCodeElim (t as CONST _) = t
     | termDeadCodeElim (t as VAR _) = t
-    | termDeadCodeElim (ABS ((x, k), e)) = ABS ((x, k), expDeadCodeElim e)
-    | termDeadCodeElim (ABS_CONT (x, e)) = ABS_CONT (x, expDeadCodeElim e)
+    | termDeadCodeElim (ABS (xs, e)) = ABS (xs, expDeadCodeElim e)
     | termDeadCodeElim (t as PRIM _) = t
 
   and expDeadCodeElim (e as APP _) = e
-    | expDeadCodeElim (e as APP_TAIL _) = e
     | expDeadCodeElim (LET_REC (bindings, e)) =
         let val e' = expDeadCodeElim e in
           if IdSet.isEmpty (IdSet.intersection (expFreeVar e',

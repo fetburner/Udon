@@ -3,12 +3,10 @@ structure Sinking = struct
 
   fun termSinking (t as CONST _) = t
     | termSinking (t as VAR _) = t
-    | termSinking (ABS ((x, k), e)) = ABS ((x, k), expSinking e)
-    | termSinking (ABS_CONT (x, e)) = ABS_CONT (x, expSinking e)
+    | termSinking (ABS (xs, e)) = ABS (xs, expSinking e)
     | termSinking (t as PRIM _) = t
 
   and expSinkingAux (e as APP _) = (IdSet.empty, fn c => c e)
-    | expSinkingAux (e as APP_TAIL _) = (IdSet.empty, fn c => c e)
     | expSinkingAux (LET_REC (bindings, e)) =
         let
           val bindings' = map (fn (x, t) => (x, termSinking t)) bindings

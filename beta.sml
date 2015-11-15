@@ -7,17 +7,13 @@ structure Beta = struct
 
   fun termBetaReduction env (t as CONST _) = t
     | termBetaReduction env (VAR x) = VAR (idBetaReduction env x)
-    | termBetaReduction env (ABS ((x, k), e)) =
-        ABS ((x, k), expBetaReduction env e)
-    | termBetaReduction env (ABS_CONT (x, e)) =
-        ABS_CONT (x, expBetaReduction env e)
+    | termBetaReduction env (ABS (xs, e)) =
+        ABS (xs, expBetaReduction env e)
     | termBetaReduction env (PRIM (p, xs)) =
         PRIM (p, map (idBetaReduction env) xs)
 
-  and expBetaReduction env (APP ((x, y), k)) =
-        APP ((idBetaReduction env x, idBetaReduction env y), idBetaReduction env k)
-    | expBetaReduction env (APP_TAIL (x, y)) =
-        APP_TAIL (idBetaReduction env x, idBetaReduction env y)
+  and expBetaReduction env (APP (x, ys)) =
+        APP (idBetaReduction env x, map (idBetaReduction env) ys)
     | expBetaReduction env (LET_REC (bindings, e)) =
         let
           val env' =

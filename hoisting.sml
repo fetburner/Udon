@@ -5,14 +5,11 @@ structure Hoisting = struct
 
   fun termCollectEvaluable env k (t as CONST _) = NONE
     | termCollectEvaluable env k (t as VAR _) = NONE
-    | termCollectEvaluable env k (ABS ((x, k'), m)) =
-        expCollectEvaluable env (fn m' => k (ABS ((x, k'), m'))) m
-    | termCollectEvaluable env k (ABS_CONT (x, m)) =
-        expCollectEvaluable env (fn m' => k (ABS_CONT (x, m'))) m
+    | termCollectEvaluable env k (ABS (xs, m)) =
+        expCollectEvaluable env (fn m' => k (ABS (xs, m'))) m
     | termCollectEvaluable env k (t as PRIM _) = NONE
 
   and expCollectEvaluable env k (APP _) = NONE
-    | expCollectEvaluable env k (APP_TAIL _) = NONE
     | expCollectEvaluable env k (LET_REC (bindings, m)) =
         if isEvaluable env (bindingsFreeVar bindings) then
           SOME (bindings, k m)
@@ -39,7 +36,6 @@ structure Hoisting = struct
 
 
   fun expHoisting env (m as APP _) = m
-    | expHoisting env (m as APP_TAIL _) = m
     | expHoisting env (LET_REC (bindings, e)) =
         let val env' = IdSet.addList (env, map #1 bindings) in
           case bindingsCollectEvaluable env' (fn x => x) [] bindings of
@@ -55,10 +51,8 @@ structure Hoisting = struct
 
   and termHoisting env (t as CONST _) = t
     | termHoisting env (t as VAR _) = t
-    | termHoisting env (ABS ((x, k), e)) =
-        ABS ((x, k), expHoisting (IdSet.addList (env, [x, k])) e)
-    | termHoisting env (ABS_CONT (x, e)) =
-        ABS_CONT (x, expHoisting (IdSet.add (env, x)) e)
+    | termHoisting env (ABS (xs, e)) =
+        ABS (xs, expHoisting (IdSet.addList (env, xs)) e)
     | termHoisting env (t as PRIM _) = t
 
   val hoisting = expHoisting IdSet.empty

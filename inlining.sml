@@ -5,21 +5,14 @@ functor InliningFun (P : sig val threshold : int end) = struct
   (* inlinings *)
   fun termInlining env (t as CONST _) = t
     | termInlining env (t as VAR _) = t
-    | termInlining env (ABS ((x, k), e)) =
-        ABS ((x, k), expInlining env e)
-    | termInlining env (ABS_CONT (x, e)) =
-        ABS_CONT (x, expInlining env e)
+    | termInlining env (ABS (xs, e)) =
+        ABS (xs, expInlining env e)
     | termInlining env (t as PRIM _) = t
 
-  and expInlining env (t as APP ((x, y), k)) =
+  and expInlining env (t as APP (x, ys)) =
         (case Env.find (env, x) of
-              SOME (ABS ((y', k'), e)) =>
-                Alpha.alphaConversion (Env.fromList [(y', y), (k', k)]) e
-            | _ => t)
-    | expInlining env (t as APP_TAIL (x, y)) =
-        (case Env.find (env, x) of
-              SOME (ABS_CONT (y', e)) =>
-                Alpha.alphaConversion (Env.fromList [(y', y)]) e
+              SOME (ABS (ys', e)) =>
+                Alpha.alphaConversion (Env.fromList (ListPair.zipEq (ys', ys))) e
             | _ => t)
     | expInlining env (LET_REC (bindings, e)) =
         let

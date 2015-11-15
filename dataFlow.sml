@@ -4,14 +4,11 @@ structure DataFlow = struct
 
   fun termDataFlowAnalysis (t as CONST _) = t
     | termDataFlowAnalysis (t as VAR _) = t
-    | termDataFlowAnalysis (ABS ((x, k), e)) =
-        ABS ((x, k), expDataFlowAnalysis e)
-    | termDataFlowAnalysis (ABS_CONT (x, e)) =
-        ABS_CONT (x, expDataFlowAnalysis e)
+    | termDataFlowAnalysis (ABS (xs, e)) =
+        ABS (xs, expDataFlowAnalysis e)
     | termDataFlowAnalysis (t as PRIM _) = t
 
   and expDataFlowAnalysis (e as APP _) = e
-    | expDataFlowAnalysis (e as APP_TAIL _) = e
     | expDataFlowAnalysis (LET_REC (bindings, e)) =
         let
           val bindings' =
