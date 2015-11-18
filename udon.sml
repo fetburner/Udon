@@ -54,12 +54,14 @@ fun exec exp stat =
 fun print_error (s, _, _) = (print s; print "\n")
 (* REPL *)
 fun readEvalPrintLoop stat lexer =
-    let val (result, lexer') = UdonParser.parse(0, lexer, print_error, ())
+  let
+    val (result, lexer') = UdonParser.parse(0, lexer, print_error, ())
 	val stat' = exec result stat
 	val (next, lexer'') = UdonParser.Stream.get lexer'
-    in readEvalPrintLoop stat' lexer''
-    end
+  in
+    readEvalPrintLoop stat' lexer''
+  end
 val lexer = UdonParser.makeLexer (fn _ => valOf (TextIO.inputLine TextIO.stdIn))
-fun run () = readEvalPrintLoop () lexer
+fun run (cmd, args) = (readEvalPrintLoop () lexer; OS.Process.success)
 
 end
