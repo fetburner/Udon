@@ -20,6 +20,7 @@ fun exec exp stat =
          o Inlining.inlining Env.empty
          o Eta.etaReduction
          o Beta.betaReduction Env.empty
+         o Cse.expCSE []
          o ControlFlow.controlFlowAnalysis) 10
     o (fn e => (print (Cps.expToString e ^ "\n\n"); e))
     o Sinking.sinking
