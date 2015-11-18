@@ -28,7 +28,7 @@ structure Hoisting = struct
   and bindingsCollectEvaluable env k revBindings1 [] = NONE
     | bindingsCollectEvaluable env k revBindings1 ((x, t) :: bindings2) =
         (case termCollectEvaluable env
-          (fn t' => k (rev revBindings1 @ (x, t') :: bindings2)) t of
+          (fn t' => k (revAppend (revBindings1, (x, t') :: bindings2))) t of
               result as SOME _ => result
             | NONE =>
                 bindingsCollectEvaluable env k
