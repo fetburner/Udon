@@ -31,7 +31,7 @@ Group is
   inlining.sml
   deadCodeElim.sml
   sinking.sml
-  dataFlow.sml
+  controlFlow.sml
   injection.sml
   udon.grm
   udon.lex
