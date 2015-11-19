@@ -43,30 +43,29 @@ structure ConcreteSyntax = struct
     | expToString (VAR x) = x
     | expToString (OP x) = "op " ^ x
     | expToString (IF (m, n1, n2)) =
-      "if "
-      ^ expToString m
-      ^ " then "
-      ^ expToString n1
-      ^ " else "
-      ^ expToString n2
-      ^ ""
+        "if "
+        ^ expToString m
+        ^ " then "
+        ^ expToString n1
+        ^ " else "
+        ^ expToString n2
     | expToString (ABS (x, m)) =
-      "fn "
-      ^ x
-      ^ " => "
-      ^ expToString m
+        "fn "
+        ^ x
+        ^ " => "
+        ^ expToString m
     | expToString (LET (d, m)) =
-      "let "
-      ^ decToString d
-      ^ " in "
-      ^ expToString m
-      ^ " end"
+        "let "
+        ^ decToString d
+        ^ " in "
+        ^ expToString m
+        ^ " end"
     | expToString (SEQ ms) =
-      PP.seqToString (expToString, "", " ", "", "") ms
+        PP.seqToString (expToString, "", " ", "", "") ms
     | expToString (PAREN m) =
-      "("
-      ^ expToString m
-      ^ ")"
+        "("
+        ^ expToString m
+        ^ ")"
     | expToString (TUPLE ms) =
         expSeqToString ms
     | expToString (CASE (m, xs, n)) =
@@ -80,15 +79,15 @@ structure ConcreteSyntax = struct
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
   and decToString dec = PP.seqToString (fn
       VAL (x, m) =>
-      "val "
-      ^ x
-      ^ " = "
-      ^ expToString m
+        "val "
+        ^ x
+        ^ " = "
+        ^ expToString m
     | VALREC (f, m) =>
-      "val rec "
-      ^ f
-      ^ " = "
-      ^ expToString m
+        "val rec "
+        ^ f
+        ^ " = "
+        ^ expToString m
     | INFIX (Infixer.Assoc.LEFT, d, vids) =>
         "infixl "
         ^ Int.toString d

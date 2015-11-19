@@ -32,31 +32,31 @@ structure Syntax = struct
   fun expToString (CONST c) = Const.toString c
     | expToString (VAR x) = Id.toString x
     | expToString (IF (m, n1, n2)) =
-      "(if "
-      ^ expToString m
-      ^ " then "
-      ^ expToString n1
-      ^ " else "
-      ^ expToString n2
-      ^ ")"
+        "(if "
+        ^ expToString m
+        ^ " then "
+        ^ expToString n1
+        ^ " else "
+        ^ expToString n2
+        ^ ")"
     | expToString (ABS (x, m)) =
-      "(fn "
-      ^ Id.toString x
-      ^ " => "
-      ^ expToString m
-      ^ ")"
+        "(fn "
+        ^ Id.toString x
+        ^ " => "
+        ^ expToString m
+        ^ ")"
     | expToString (APP (m, n)) =
-      "("
-      ^ expToString m
-      ^ " "
-      ^ expToString n
-      ^ ")"
+        "("
+        ^ expToString m
+        ^ " "
+        ^ expToString n
+        ^ ")"
     | expToString (LET (d, m)) =
-      "let "
-      ^ decToString d
-      ^ " in "
-      ^ expToString m
-      ^ " end"
+        "let "
+        ^ decToString d
+        ^ " in "
+        ^ expToString m
+        ^ " end"
     | expToString (TUPLE ms) =
         expSeqToString ms
     | expToString (CASE (m, xs, n)) =
@@ -76,13 +76,13 @@ structure Syntax = struct
   and expSeqToString seq = PP.seqToString (expToString, "()", ", ", "(", ")") seq
   and decToString dec = PP.seqToString (fn
       VAL (x, m) =>
-      "val "
-      ^ Id.toString x
-      ^ " = "
-      ^ expToString m
+        "val "
+        ^ Id.toString x
+        ^ " = "
+        ^ expToString m
     | VALREC (f, m) =>
-      "val rec "
-      ^ Id.toString f
-      ^ " = "
-      ^ expToString m, "", "; ", "", "") dec
+        "val rec "
+        ^ Id.toString f
+        ^ " = "
+        ^ expToString m, "", "; ", "", "") dec
 end
