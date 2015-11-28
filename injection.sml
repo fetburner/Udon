@@ -4,12 +4,11 @@ structure Injection = struct
   fun reduceBinOp p (m, n) = Syntax.PRIM (p, [m, n])
 
   val infixInfo =
-    Env.fromList
+    foldl StringMap.insert' StringMap.empty
       (map (fn (x, p) =>
-        case Prim.priority p of
-             NONE => (x, NONE)
-           | SOME (d, assoc) =>
-               (x, SOME (reduceBinOp p, d, assoc))) primitives)
+        let val (d, assoc) = Prim.priority p in
+          (x, (reduceBinOp p, d, assoc))
+        end) primitives)
 
   val typeInfo = Env.empty
 end

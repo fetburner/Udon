@@ -18,11 +18,9 @@ structure Prim = struct
     | toString TUPLE = "make_tuple"
     | toString (TUPLE_GET n) = "#" ^ Int.toString n
 
-  fun priority (PLUS | MINUS) = SOME (6, Infixer.Assoc.LEFT)
-    | priority TIMES = SOME (7, Infixer.Assoc.LEFT)
-    | priority LE = SOME (4, Infixer.Assoc.LEFT)
-    | priority TUPLE = NONE
-    | priority (TUPLE_GET n) = NONE
+  fun priority (PLUS | MINUS) = (6, Infixer.Assoc.LEFT)
+    | priority TIMES = (7, Infixer.Assoc.LEFT)
+    | priority LE = (4, Infixer.Assoc.LEFT)
 
   fun dom (PLUS | MINUS | TIMES | LE) = [Type.INT, Type.INT]
 
@@ -30,7 +28,7 @@ structure Prim = struct
     | cod LE = Type.BOOL
 
   val primitives =
-    map (fn p => (Id.gensym (toString p), p))
+    map (fn p => (toString p, p))
     [ PLUS,
       MINUS,
       TIMES,

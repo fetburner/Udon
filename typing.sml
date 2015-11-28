@@ -1,6 +1,6 @@
 structure Typing : TYPING = struct
   (* exception that arises when unbound variable occur *)
-  exception UnboundVar of Id.t
+  exception UnboundVar of string
   local
     open TypedSyntax
   in
@@ -8,9 +8,12 @@ structure Typing : TYPING = struct
     fun typingExp l env (Syntax.CONST c) =
           (CONST c, Const.typeOf c)
       | typingExp l env (Syntax.VAR x) =
-          (case Option.map (Type.inst l) (Env.find (env, x)) of
+          (case Env.findName (env, x) of
                 NONE => raise (UnboundVar x)
-              | SOME (t, ts) => (VAR (x, ts), t))
+              | SOME (x', t0) =>
+                  let val (t, ts) = Type.inst l t0 in
+                    (VAR (x', ts), t)
+                  end)
       | typingExp l env (Syntax.IF (m, n1, n2)) =
           let
             val (m', t1) = typingExp l env m
@@ -23,7 +26,7 @@ structure Typing : TYPING = struct
           end
       | typingExp l env (Syntax.ABS (x, m)) =
           let
-            val x' = (x, Type.genvar l)
+            val x' = (Id.gensym x, Type.genvar l)
             val (m', t2) = typingExp l (Env.insertList (env, [idToPolyId x'])) m
           in
             (ABS (x', m'), Type.FUN (idTypeOf x', t2))
@@ -48,7 +51,7 @@ structure Typing : TYPING = struct
       | typingExp l env (Syntax.CASE (m, xs, n)) =
           let
             val (m', t1) = typingExp l env m
-            val xs' = map (fn x => (x, Type.genvar l)) xs
+            val xs' = map (fn x => (Id.gensym x, Type.genvar l)) xs
             val (n', t2) = typingExp l (Env.insertList (env, map idToPolyId xs')) n
           in
             Type.unify (t1, Type.TUPLE (idSeqTypeOf xs'));
@@ -68,19 +71,19 @@ structure Typing : TYPING = struct
       | typingLet l dec' env0 env (Syntax.VAL (x, m) :: dec) body =
           let
             val (m', t1) = typingExp (l + 1) env m
-            val x' = (x, Type.generalize l t1)
+            val x' = (Id.gensym x, Type.generalize l t1)
             val env' = Env.insertList (env, [x'])
           in
             typingLet l (VAL (x', m') :: dec') env0 env' dec body
           end
       | typingLet l dec' env0 env (Syntax.VALREC (f, m) :: dec) body =
           let
-            val f' = (f, Type.genvar (l + 1))
+            val f' = (Id.gensym f, Type.genvar (l + 1))
             val (m', t1) = typingExp (l + 1) (Env.insertList (env, [idToPolyId f'])) m
           in
             Type.unify (idTypeOf f', t1);
             let
-              val f' = (f, Type.generalize l (idTypeOf f'))
+              val f' = (#1 f', Type.generalize l (idTypeOf f'))
               val env' = Env.insertList (env, [f'])
             in
               typingLet l (VALREC (f', m') :: dec') env0 env' dec body
