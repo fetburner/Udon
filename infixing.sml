@@ -8,14 +8,9 @@ structure Infixing : INFIXING = struct
     fun reduceBinOp op1 (e1, e2) =
       Syntax.APP (Syntax.VAR op1, Syntax.TUPLE [e1, e2])
 
-    fun infixingVar env x =
-      case Env.findName (env, x) of
-            SOME (x', _) => Syntax.VAR x'
-          | NONE => raise (UnboundVar x)
-
     fun infixing env (CONST c) = Syntax.CONST c
-      | infixing env (VAR x) = infixingVar env x
-      | infixing env (OP x) = infixingVar env x
+      | infixing env (VAR x) = Syntax.VAR x
+      | infixing env (OP x) = Syntax.VAR x
       | infixing env (IF (m, n1, n2)) =
           let
             val m' = infixing env m
@@ -25,22 +20,17 @@ structure Infixing : INFIXING = struct
             Syntax.IF (m', n1', n2')
           end
       | infixing env (ABS (x, m)) =
-          let
-            val x' = Id.gensym x
-            val m' = infixing (Env.insert (env, x', NONE)) m
-          in
-            Syntax.ABS (x', m')
-          end
-      | infixing env (LET (dec, m)) = infixingLet [] env dec m
+          Syntax.ABS (x, infixing env m)
+      | infixing env (LET (dec, m)) =
+          infixingLet [] env dec m
       | infixing env (SEQ ms) =
           let
             fun lookahead (VAR x :: _) =
-                  (case Env.findName (env, x) of
-                        SOME (x', SOME desc) =>
+                  (case StringMap.find (env, x) of
+                        SOME desc =>
                           Token.BINOP desc
-                      | SOME (x', NONE) =>
-                          Token.EXP (Syntax.VAR x')
-                      | NONE => raise (UnboundVar x))
+                      | NONE =>
+                          Token.EXP (Syntax.VAR x))
               | lookahead (m :: _) =
                   Token.EXP (infixing env m)
               | lookahead [] = Token.EOI
@@ -56,50 +46,31 @@ structure Infixing : INFIXING = struct
       | infixing env (CASE (m, xs, n)) =
           let
             val m' = infixing env m
-            val xs' = map Id.gensym xs
-            val env' = Env.insertList (env, map (fn x => (x, NONE)) xs')
-            val n' = infixing env' n
+            val n' = infixing env n
           in
-            Syntax.CASE (m', xs', n')
+            Syntax.CASE (m', xs, n')
           end
 
     and infixingLet dec' env [] body =
           Syntax.LET (rev dec', infixing env body) 
       | infixingLet dec' env (VAL (x, m) :: dec) body =
-          let
-            val x' = Id.gensym x
-            val m' = infixing env m
-            val env' = Env.insert (env, x', NONE)
-          in
-            infixingLet (Syntax.VAL (x', m') :: dec') env' dec body
-          end
+          infixingLet (Syntax.VAL (x, infixing env m) :: dec') env dec body
       | infixingLet dec' env (VALREC (f, m) :: dec) body =
-          let 
-            val f' = Id.gensym f
-            val env' = Env.insert (env, f', NONE)
-            val m' = infixing env' m
-          in
-            infixingLet (Syntax.VALREC (f', m') :: dec') env' dec body
-          end
+          infixingLet (Syntax.VALREC (f, infixing env m) :: dec') env dec body
       | infixingLet dec' env (INFIX (assoc, d, vids) :: dec) body =
           let
-            val vids' =
-              map (fn vid =>
-                case Env.findName (env, vid) of
-                     SOME (vid', _) => (vid', SOME (reduceBinOp vid', d, assoc))
-                   | NONE => raise (UnboundVar vid)) vids
-            val env' = Env.insertList (env, vids')
+            val env' =
+              foldl StringMap.insert' env
+                (map (fn vid =>
+                  (vid, (reduceBinOp vid, d, assoc))) vids)
           in
             infixingLet dec' env' dec body
           end
       | infixingLet dec' env (NONFIX vids :: dec) body =
           let
-            val vids' = 
-              map (fn vid =>
-                case Env.findName (env, vid) of
-                     SOME (vid', _) => (vid', NONE)
-                   | NONE => raise (UnboundVar vid)) vids
-            val env' = Env.insertList (env, vids')
+            val env' =
+              foldl (fn (vid, env) =>
+              #1 (StringMap.remove (env, vid))) env vids
           in
             infixingLet dec' env' dec body
           end
