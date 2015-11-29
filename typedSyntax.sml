@@ -4,6 +4,7 @@ structure TypedSyntax = struct
 
   fun idToString (x, t) = Id.toString x ^ " : " ^ Type.toString t
   val idSeqToString = PP.seqToString (idToString, "()", ", ", "(", ")")
+  val polyIdNameOf : id -> Id.t = #1
   (* return type of typed value identifier *)
   val idTypeOf : id -> Type.t = #2
   (* return types of typed value identifiers *)
@@ -38,17 +39,16 @@ structure TypedSyntax = struct
     (* op (+) (M_1, ..., M_n) *)
     | PRIM of Prim.t * exp list
   and dec =
-    (* val x : /\X_1 ... X_n. T = M *)
+    (* val x : forall X_1 ... X_n. T = /\X_1. ... /\X_n. M *)
       VAL of polyId * exp
-    (* val rec f : /\X_1 ... X_n. T = M *)
+    (* val rec f : forall X_1 ... X_n. T = /\X_1. ... /\X_n. M *)
     | VALREC of polyId * exp
 
   fun expToString (CONST c) = Const.toString c
     | expToString (VAR (x, ts)) =
         "("
         ^ Id.toString x
-        ^ PP.seqToString (fn t =>
-            " [" ^ Type.toString t ^ "]", "", "", "", "") ts
+        ^ foldr op^ "" (map (fn t => " [" ^ Type.toString t ^ "]") ts)
         ^ ")"
     | expToString (IF (m, n1, n2)) =
         "(if "
@@ -98,10 +98,16 @@ structure TypedSyntax = struct
         "val "
         ^ polyIdToString x
         ^ " = "
+        ^ foldr op^ ""
+            (map (fn y => "/\\" ^ Id.toString y ^ ". ")
+              (Type.schemeListQuantifeds (polyIdTypeOf x)))
         ^ expToString m
     | VALREC (f, m) =>
         "val rec "
         ^ polyIdToString f
         ^ " = "
+        ^ foldr op^ ""
+            (map (fn y => "/\\" ^ Id.toString y ^ ". ")
+              (Type.schemeListQuantifeds (polyIdTypeOf f)))
         ^ expToString m, "", "; ", "", "") dec
 end

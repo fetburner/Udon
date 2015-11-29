@@ -32,6 +32,8 @@ structure Type = struct
         ^ ", "
         ^ toString t
 
+  fun schemeListQuantifeds (xs, _) = xs
+
   (* generate type variable in current level *)
   fun genvar l = VAR (ref (UNBOUND (Id.gensym "a", l)))
 
@@ -55,23 +57,23 @@ structure Type = struct
   (* generalize type variable in current level *)
   fun generalize l t =
     let
-      val bounds = ref IdSet.empty
-      fun generalizeBody (VAR (ref (LINK t))) =
-            generalizeBody t
-        | generalizeBody (t as (VAR (ref (UNBOUND (x, l'))))) =
+      val bounds = ref []
+      fun generalizeBody (VAR (ref (LINK t))) = generalizeBody t
+        | generalizeBody (VAR (r as ref (UNBOUND (x, l')))) =
             if l < l' then
-              (bounds := IdSet.add (!bounds, x);
-               META x)
-            else t
-        | generalizeBody (t as (META _)) = t
-        | generalizeBody (t as INT) = t
-        | generalizeBody (t as BOOL) = t
+              (bounds := x :: !bounds;
+               r := LINK (META x))
+            else ()
+        | generalizeBody (META _) = ()
+        | generalizeBody INT = ()
+        | generalizeBody BOOL = ()
         | generalizeBody (FUN (t1, t2)) =
-            FUN (generalizeBody t1, generalizeBody t2)
-        | generalizeBody (TUPLE ts) = TUPLE (map generalizeBody ts)
-      val t' = generalizeBody t
+            (generalizeBody t1; generalizeBody t2)
+        | generalizeBody (TUPLE ts) =
+            app generalizeBody ts
+      val () = generalizeBody t
     in
-      (IdSet.listItems (!bounds), t')
+      (!bounds, t)
     end
 
   (* exception that arises when type checker fail to unify types *)

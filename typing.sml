@@ -41,7 +41,7 @@ structure Typing : TYPING = struct
             (APP (m', n'), t12)
           end
       | typingExp l env (Syntax.LET (dec, m)) =
-          typingLet l [] env env dec m
+          typingLet l [] env dec m
       | typingExp l env (Syntax.TUPLE ms) =
           let
             val (ms', ts) = ListPair.unzip (map (typingExp l env) ms)
@@ -62,31 +62,31 @@ structure Typing : TYPING = struct
             ListPair.appEq Type.unify (Prim.dom p, ts);
             (PRIM (p, ms'), Prim.cod p)
           end
-    and typingLet l dec' env0 env [] body =
+    and typingLet l dec' env [] body =
           let 
             val (body', t) = typingExp l env body
           in
             (LET (rev dec', body'), t)
           end
-      | typingLet l dec' env0 env (Syntax.VAL (x, m) :: dec) body =
+      | typingLet l dec' env (Syntax.VAL (x, m) :: dec) body =
           let
             val (m', t1) = typingExp (l + 1) env m
             val x' = (Id.gensym x, Type.generalize l t1)
             val env' = Env.insertList (env, [x'])
           in
-            typingLet l (VAL (x', m') :: dec') env0 env' dec body
+            typingLet l (VAL (x', m') :: dec') env' dec body
           end
-      | typingLet l dec' env0 env (Syntax.VALREC (f, m) :: dec) body =
+      | typingLet l dec' env (Syntax.VALREC (f, m) :: dec) body =
           let
             val f' = (Id.gensym f, Type.genvar (l + 1))
             val (m', t1) = typingExp (l + 1) (Env.insertList (env, [idToPolyId f'])) m
           in
             Type.unify (idTypeOf f', t1);
             let
-              val f' = (#1 f', Type.generalize l (idTypeOf f'))
+              val f' = (polyIdNameOf f', Type.generalize l (idTypeOf f'))
               val env' = Env.insertList (env, [f'])
             in
-              typingLet l (VALREC (f', m') :: dec') env0 env' dec body
+              typingLet l (VALREC (f', m') :: dec') env' dec body
             end
           end
 
