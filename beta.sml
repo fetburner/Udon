@@ -36,5 +36,5 @@ structure Beta = struct
            expBetaReduction env e1,
            expBetaReduction env e2)
 
-  val betaReduction = expBetaReduction
+  val betaReduction = expBetaReduction Env.empty
 end

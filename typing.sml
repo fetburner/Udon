@@ -91,6 +91,6 @@ structure Typing : TYPING = struct
           end
 
     (* typing expression *)
-    fun typing l env e = #1 (typingExp l env e)
+    fun typing e = #1 (typingExp 0 Env.empty e)
   end
 end

@@ -29,5 +29,5 @@ functor InliningFun (P : sig val threshold : int end) = struct
     | expInlining env (IF (x, e1, e2)) =
         IF (x, expInlining env e1, expInlining env e2)
 
-  val inlining = expInlining
+  val inlining = expInlining Env.empty
 end

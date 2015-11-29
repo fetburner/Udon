@@ -75,5 +75,5 @@ structure ConstFold = struct
                   expConstFold (Env.insert (env, x, CONST (Const.BOOL true))) e1,
                   expConstFold (Env.insert (env, x, CONST (Const.BOOL false))) e2))
 
-  val constFold = expConstFold
+  val constFold = expConstFold Env.empty
 end

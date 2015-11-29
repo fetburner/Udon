@@ -30,4 +30,6 @@ structure Cse = struct
           if e1' = e2' then e1'
           else IF (x, e1', e2')
         end
+
+  val cse = expCSE []
 end

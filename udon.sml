@@ -16,11 +16,11 @@ fun exec exp stat =
     o Cps.expToString
     o foldn
         (DeadCodeElim.deadCodeElim
-         o ConstFold.constFold Env.empty
-         o Inlining.inlining Env.empty
+         o ConstFold.constFold
+         o Inlining.inlining
          o Eta.etaReduction
-         o Beta.betaReduction Env.empty
-         o Cse.expCSE []
+         o Beta.betaReduction
+         o Cse.cse
          o ControlFlow.controlFlowAnalysis) 10
     o (fn e => (print (Cps.expToString e ^ "\n\n"); e))
     o Sinking.sinking
@@ -32,7 +32,7 @@ fun exec exp stat =
         end))
     o (fn e => (print (TypedSyntax.expToString e ^ "\n\n"); e))
     o Uncurrying.uncurrying
-    o Typing.typing 0 Injection.typeInfo
+    o Typing.typing
     o Infixing.infixing Injection.infixInfo) exp
    handle
     Type.Unify (t1, t2) =>

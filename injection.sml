@@ -9,7 +9,5 @@ structure Injection = struct
         let val (d, assoc) = Prim.priority p in
           (x, (reduceBinOp p, d, assoc))
         end) primitives)
-
-  val typeInfo = Env.empty
 end
 
