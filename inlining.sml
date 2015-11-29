@@ -8,6 +8,8 @@ functor InliningFun (P : sig val threshold : int end) = struct
     | termInlining env (ABS (xs, e)) =
         ABS (xs, expInlining env e)
     | termInlining env (t as PRIM _) = t
+    | termInlining env (t as TUPLE _) = t
+    | termInlining env (t as PROJ _) = t
 
   and expInlining env (t as APP (x, ys)) =
         (case Env.find (env, x) of

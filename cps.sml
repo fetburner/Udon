@@ -9,6 +9,10 @@ structure Cps = struct
     | ABS of Id.t list * exp
     (* ( + ) (x_1, ... , x_n) *)
     | PRIM of Prim.t * Id.t list
+    (* (x_1, ..., x_n) *)
+    | TUPLE of Id.t list
+    (* #n x *)
+    | PROJ of int * Id.t
   (* e *)
   and exp =
     (* x (y_1, ..., y_n) *)
@@ -30,6 +34,13 @@ structure Cps = struct
         Prim.toString p
         ^ " "
         ^ Id.seqToString xs
+    | termToString (TUPLE xs) =
+        Id.seqToString xs
+    | termToString (PROJ (n, x)) =
+        "#"
+        ^ Int.toString n
+        ^ " "
+        ^ Id.toString x
 
   and expToString (APP (x, ys)) =
         Id.toString x
@@ -55,6 +66,8 @@ structure Cps = struct
     | termFreeVar (VAR x) = IdSet.singleton x
     | termFreeVar (ABS (xs, e)) = IdSet.subtractList (expFreeVar e, xs)
     | termFreeVar (PRIM (p, xs)) = IdSet.fromList xs
+    | termFreeVar (TUPLE xs) = IdSet.fromList xs
+    | termFreeVar (PROJ (n, x)) = IdSet.singleton x
 
   and expFreeVar (APP (x, ys)) = IdSet.fromList (x :: ys)
     | expFreeVar (LET_REC (bindings, e)) =
@@ -75,6 +88,8 @@ structure Cps = struct
     | termSize (VAR _) = 1
     | termSize (ABS (_, e)) = 1 + expSize e
     | termSize (PRIM _) = 1
+    | termSize (TUPLE _) = 1
+    | termSize (PROJ _) = 1
 
   and expSize (APP _) = 1
     | expSize (LET_REC (bindings, e)) =

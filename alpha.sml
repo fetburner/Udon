@@ -16,6 +16,10 @@ structure Alpha = struct
         end
     | termAlphaConversion env (PRIM (p, xs)) =
         PRIM (p, map (idAlphaConversion env) xs)
+    | termAlphaConversion env (TUPLE xs) =
+        TUPLE (map (idAlphaConversion env) xs)
+    | termAlphaConversion env (PROJ (n, x)) =
+        PROJ (n, idAlphaConversion env x)
 
   and expAlphaConversion env (APP (x, ys)) =
         APP (idAlphaConversion env x, map (idAlphaConversion env) ys)

@@ -3,11 +3,13 @@ structure Hoisting = struct
 
   fun isEvaluable env fv = IdSet.isSubset (fv, env)
 
-  fun termCollectEvaluable env k (t as CONST _) = NONE
-    | termCollectEvaluable env k (t as VAR _) = NONE
+  fun termCollectEvaluable env k (CONST _) = NONE
+    | termCollectEvaluable env k (VAR _) = NONE
     | termCollectEvaluable env k (ABS (xs, m)) =
         expCollectEvaluable env (fn m' => k (ABS (xs, m'))) m
-    | termCollectEvaluable env k (t as PRIM _) = NONE
+    | termCollectEvaluable env k (PRIM _) = NONE
+    | termCollectEvaluable env k (TUPLE _) = NONE
+    | termCollectEvaluable env k (PROJ _) = NONE
 
   and expCollectEvaluable env k (APP _) = NONE
     | expCollectEvaluable env k (LET_REC (bindings, m)) =
@@ -54,6 +56,8 @@ structure Hoisting = struct
     | termHoisting env (ABS (xs, e)) =
         ABS (xs, expHoisting (IdSet.addList (env, xs)) e)
     | termHoisting env (t as PRIM _) = t
+    | termHoisting env (t as TUPLE _) = t
+    | termHoisting env (t as PROJ _) = t
 
   val hoisting = expHoisting IdSet.empty
 end

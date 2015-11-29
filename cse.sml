@@ -6,6 +6,8 @@ structure Cse = struct
     | termCSE env (ABS (xs, e)) =
         ABS (xs, expCSE env e)
     | termCSE env (t as PRIM _) = t
+    | termCSE env (t as TUPLE _) = t
+    | termCSE env (t as PROJ _) = t
 
   and expCSE env (e as APP _) = e
     | expCSE env (LET_REC (bindings, e)) =

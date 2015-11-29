@@ -14,7 +14,7 @@ structure ConstFold = struct
 
   fun findTuple env x =
     case Env.find (env, x) of
-         SOME (PRIM (Prim.TUPLE, xs)) => SOME xs
+         SOME (TUPLE xs) => SOME xs
        | _ => NONE
 
   fun termConstFold env (t as CONST _) = t
@@ -51,11 +51,11 @@ structure ConstFold = struct
         (case map (findInt env) xs of
               [ SOME m, SOME n ] => CONST (Const.BOOL (m <= n))
             | _ => t)
-    | termConstFold env (t as PRIM (Prim.TUPLE_GET n, [x])) =
+    | termConstFold env (t as TUPLE _) = t
+    | termConstFold env (t as PROJ (n, x)) =
         getOpt
           (Option.map (fn xs => VAR (List.nth (xs, n - 1)))
             (findTuple env x), t)
-    | termConstFold env (t as PRIM _) = t
 
   and expConstFold env (e as APP _) = e
     | expConstFold env (LET_REC (bindings, e)) =

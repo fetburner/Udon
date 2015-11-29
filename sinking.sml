@@ -5,6 +5,8 @@ structure Sinking = struct
     | termSinking (t as VAR _) = t
     | termSinking (ABS (xs, e)) = ABS (xs, expSinking e)
     | termSinking (t as PRIM _) = t
+    | termSinking (t as TUPLE _) = t
+    | termSinking (t as PROJ _) = t
 
   and expSinkingAux (e as APP _) = (IdSet.empty, fn c => c e)
     | expSinkingAux (LET_REC (bindings, e)) =

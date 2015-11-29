@@ -11,6 +11,10 @@ structure Beta = struct
         ABS (xs, expBetaReduction env e)
     | termBetaReduction env (PRIM (p, xs)) =
         PRIM (p, map (idBetaReduction env) xs)
+    | termBetaReduction env (TUPLE xs) =
+        TUPLE (map (idBetaReduction env) xs)
+    | termBetaReduction env (PROJ (n, x)) =
+        PROJ (n, idBetaReduction env x)
 
   and expBetaReduction env (APP (x, ys)) =
         APP (idBetaReduction env x, map (idBetaReduction env) ys)

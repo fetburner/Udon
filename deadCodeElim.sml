@@ -6,6 +6,8 @@ structure DeadCodeElim = struct
     | termDeadCodeElim (t as VAR _) = t
     | termDeadCodeElim (ABS (xs, e)) = ABS (xs, expDeadCodeElim e)
     | termDeadCodeElim (t as PRIM _) = t
+    | termDeadCodeElim (t as TUPLE _) = t
+    | termDeadCodeElim (t as PROJ _) = t
 
   and expDeadCodeElim (e as APP _) = e
     | expDeadCodeElim (LET_REC (bindings, e)) =

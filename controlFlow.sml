@@ -7,6 +7,8 @@ structure ControlFlow = struct
     | termControlFlowAnalysis (ABS (xs, e)) =
         ABS (xs, expControlFlowAnalysis e)
     | termControlFlowAnalysis (t as PRIM _) = t
+    | termControlFlowAnalysis (t as TUPLE _) = t
+    | termControlFlowAnalysis (t as PROJ _) = t
 
   and expControlFlowAnalysis (e as APP _) = e
     | expControlFlowAnalysis (LET_REC (bindings, e)) =

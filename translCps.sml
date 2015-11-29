@@ -48,11 +48,11 @@ structure TranslCps = struct
                 Cps.LET_REC ([(x, n')], m')))
           (transl m cont) d
     | transl (TUPLE ms) cont =
-        translPrim Prim.TUPLE ms cont
+        translExpSeq ms [] (fn ids => cont (Cps.TUPLE ids))
     | transl (CASE (m, xs, n)) cont =
         translCase m xs n cont
     | transl (PRIM (p, ms)) cont =
-        translPrim p ms cont
+        translExpSeq ms [] (fn ids => cont (Cps.PRIM (p, ids)))
 
   and translCase e1 ids e2 cont =
       let
@@ -60,17 +60,13 @@ structure TranslCps = struct
         fun loop exp cont n [] = transl exp cont
           | loop exp cont n (id :: ids) =
               Cps.LET_REC
-                ([(id, Cps.PRIM (Prim.TUPLE_GET n, [newId]))],
+                ([(id, Cps.PROJ (n, newId))],
                  loop exp cont (n + 1) ids)
           val exp = loop e2 cont 1 (map #1 ids)
       in
         transl e1 (fn e1' =>
           Cps.LET_REC ([(newId, e1')], exp))
       end
-
-  and translPrim p ms cont =
-    translExpSeq ms [] (fn ids =>
-      cont (Cps.PRIM (p, ids)))
 
   and translExpSeq [] ids body = body (rev ids)
     | translExpSeq (e :: exps) ids body =
