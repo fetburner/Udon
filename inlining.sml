@@ -20,7 +20,10 @@ functor InliningFun (P : sig val threshold : int end) = struct
         let
           val env' = Env.insertList (env,
             List.mapPartial (fn (x, t) =>
-              if termSize t <= threshold then SOME (x, t)
+              if
+                termSize t <= threshold
+                andalso not (IdSet.member (termFreeVar t, x))
+              then SOME (x, t)
               else NONE) bindings)
           val bindings' = map (fn (x, t) => (x, termInlining env' t)) bindings
         in
