@@ -16,10 +16,10 @@ structure Prim = struct
     | priority TIMES = (7, Infixer.Assoc.LEFT)
     | priority LE = (4, Infixer.Assoc.LEFT)
 
-  fun dom (PLUS | MINUS | TIMES | LE) = [Type.INT, Type.INT]
-
-  fun cod (PLUS | MINUS | TIMES) = Type.INT
-    | cod LE = Type.BOOL
+  fun typeOf (PLUS | MINUS | TIMES) =
+        Type.FUN ([Type.INT, Type.INT], Type.INT)
+    | typeOf LE =
+        Type.FUN ([Type.INT, Type.INT], Type.BOOL)
 
   val primitives =
     map (fn p => (toString p, p))
