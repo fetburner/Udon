@@ -35,6 +35,7 @@ Group is
   cse.sml
   controlFlow.sml
   injection.sml
+  closure.sml
   udon.grm
   udon.lex
   udon.sml

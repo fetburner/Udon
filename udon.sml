@@ -13,7 +13,8 @@ fun foldn f 0 x = x
 
 fun exec exp stat =
   ((print
-    o Cps.expToString
+    o Closure.programToString
+    o Closure.closureConv
     o foldn
         (DeadCodeElim.deadCodeElim
          o ConstFold.constFold
