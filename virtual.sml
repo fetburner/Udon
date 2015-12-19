@@ -136,7 +136,7 @@ structure Virtual = struct
                if stack n = x then (codes, n + 1)
                else (VAR (x, stack n) :: codes, n + 1))
                (#1 (foldl (fn (x, (codes, n)) =>
-                 (PROJ (x, n, stack 0) :: codes, n + 1)) ([ GOTO f ], 0) e), 1) xs)))
+                 (PROJ (x, n, stack 0) :: codes, n + 1)) ([ GOTO l ], 0) e), 1) xs)))
           end) fundecs)
       val mapping = Env.fromList mapping
       val (toplevel', m') = expCodeGeneration mapping toplevel m
