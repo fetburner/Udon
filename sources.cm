@@ -36,6 +36,7 @@ Group is
   controlFlow.sml
   injection.sml
   closure.sml
+  virtual.sml
   udon.grm
   udon.lex
   udon.sml
